@@ -12,3 +12,6 @@ build/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+.coverage
+.vscode/
+.claude/ralph-loop.local.md
