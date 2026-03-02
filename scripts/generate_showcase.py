@@ -22,12 +22,12 @@ VTK_DATA_URL = "https://raw.githubusercontent.com/pyvista/vtk-data/master/Data"
 
 # Files to download
 DATA_FILES = [
-    "cow.vtp",
     "dragon.ply",
     "head.vti",
     "disk_out_ref_surface.vtp",
     "carotid.vtk",
     "Armadillo.ply",
+    "ironProt.vtk",
 ]
 
 # Each render is a standalone Python snippet executed in its own process.
@@ -213,33 +213,36 @@ RENDERS: dict[str, str] = {
         PNG = render_to_png(sliced, cfg, cam)
     """),
 
-    # 7. Geometry: VTK Cow with Elevation
-    "cow": textwrap.dedent("""\
+    # 7. Molecular: Iron Protein electron density isosurfaces
+    "ironprot": textwrap.dedent("""\
         import vtk
+        from parapilot.engine.filters import apply_filter
         from parapilot.engine.renderer import RenderConfig, render_to_png
         from parapilot.engine.camera import CameraConfig
 
-        reader = vtk.vtkXMLPolyDataReader()
-        reader.SetFileName(DATA_DIR + '/cow.vtp')
+        reader = vtk.vtkStructuredPointsReader()
+        reader.SetFileName(DATA_DIR + '/ironProt.vtk')
         reader.Update()
 
+        contoured = apply_filter(reader.GetOutput(), 'contour', array_name='scalars', values=[80, 150])
+
         norms = vtk.vtkPolyDataNormals()
-        norms.SetInputData(reader.GetOutput())
+        norms.SetInputData(contoured)
         norms.ComputePointNormalsOn()
         norms.Update()
 
         elev = vtk.vtkElevationFilter()
         elev.SetInputConnection(norms.GetOutputPort())
-        b = reader.GetOutput().GetBounds()
+        b = contoured.GetBounds()
         elev.SetLowPoint(0, b[2], 0)
         elev.SetHighPoint(0, b[3], 0)
         elev.Update()
 
-        cam = CameraConfig(position=(10, 5, 8), focal_point=(0.5, -0.5, 0), view_up=(0, 1, 0))
+        cam = CameraConfig(position=(90, 70, 110), focal_point=(34, 34, 34), view_up=(0, 1, 0))
         cfg = RenderConfig(
             width=1920, height=1080, background=(0.04, 0.04, 0.06),
-            colormap='magma', array_name='Elevation',
-            show_scalar_bar=True, scalar_bar_title='Elevation',
+            colormap='plasma', array_name='Elevation',
+            show_scalar_bar=True, scalar_bar_title='Electron Density',
         )
         PNG = render_to_png(elev.GetOutput(), cfg, cam)
     """),
