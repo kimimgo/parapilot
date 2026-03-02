@@ -2,7 +2,7 @@
 
 
 def main() -> None:
-    """Entry point for mcp-server-mechkit CLI."""
+    """Entry point for mcp-server-kimtech CLI."""
     # TODO: Migrate from pv-agent server.py
     raise NotImplementedError("Server not yet migrated from pv-agent")
 

@@ -1,11 +1,11 @@
 {
   "mcpServers": {
-    "mechkit": {
-      "command": "mcp-server-mechkit",
+    "kimtech": {
+      "command": "mcp-server-kimtech",
       "env": {
         "PV_PYTHON_BIN": "",
         "PV_RENDER_BACKEND": "auto",
-        "PV_WORK_DIR": "/tmp/mechkit"
+        "PV_WORK_DIR": "/tmp/kimtech"
       }
     }
   }

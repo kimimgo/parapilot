@@ -1,12 +1,12 @@
 {
-  "name": "mechkit",
+  "name": "kimtech",
   "description": "CAE post-processing plugin for AI coding assistants. Headless ParaView rendering, mesh analysis, and automated report generation for CFD/FEA researchers.",
   "version": "0.1.0",
   "author": {
     "name": "Imgyu Kim",
     "url": "https://github.com/kimimgo"
   },
-  "repository": "https://github.com/kimimgo/mechkit",
+  "repository": "https://github.com/kimimgo/kimtech",
   "license": "MIT",
   "keywords": [
     "cae",

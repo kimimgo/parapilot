@@ -1,11 +1,11 @@
-# mechkit
+# kimtech
 
 CAE post-processing plugin for AI coding assistants.
 
 ## Project Info
 - **Group**: dev
-- **Agent**: cc-mechkit
-- **Repo**: kimimgo/mechkit (private → public target)
+- **Agent**: cc-kimtech
+- **Repo**: kimimgo/kimtech (private → public target)
 - **Language**: Python
 - **MCP SDK**: fastmcp>=2.0.0
 
@@ -27,7 +27,7 @@ Layer 2: Agents (전문 서브에이전트)
   viz-agent    — 시각화 파이프라인 구성 (sonnet)
   mesh-agent   — 메시 분석/변환 (haiku)
 
-Layer 1: MCP Server (mcp-server-mechkit)
+Layer 1: MCP Server (mcp-server-kimtech)
   pvpython subprocess → ParaView 렌더링
   meshio            → 50+ 형식 변환
   trimesh           → STL/OBJ/PLY 분석
@@ -38,12 +38,12 @@ Layer 1: MCP Server (mcp-server-mechkit)
 - `.claude-plugin/plugin.json` — 플러그인 메타데이터
 - `skills/` — 3개 스킬 (cfd-postprocess, mesh-inspect, report-generate)
 - `agents/` — 2개 에이전트 (viz-agent, mesh-agent)
-- `src/mechkit/` — MCP 서버 소스 (pv-agent에서 마이그레이션)
-- `pyproject.toml` — PyPI: mcp-server-mechkit
+- `src/kimtech/` — MCP 서버 소스 (pv-agent에서 마이그레이션)
+- `pyproject.toml` — PyPI: mcp-server-kimtech
 
 ## Migration from pv-agent
 
-pv-agent의 MCP 서버 코드를 src/mechkit/로 마이그레이션.
+pv-agent의 MCP 서버 코드를 src/kimtech/로 마이그레이션.
 기존 12개 tool + 7 resource + 3 prompt 유지.
 
 ## Competitors
