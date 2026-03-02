@@ -1,6 +1,6 @@
 {
   "name": "parapilot",
-  "description": "CAE post-processing plugin for AI coding assistants. Headless ParaView rendering, mesh analysis, and automated report generation for CFD/FEA researchers.",
+  "description": "CAE post-processing plugin for AI coding assistants. Headless VTK rendering, mesh analysis, and automated report generation for CFD/FEA researchers.",
   "version": "0.1.0",
   "author": {
     "name": "Imgyu Kim",
@@ -12,6 +12,7 @@
     "cae",
     "cfd",
     "fea",
+    "vtk",
     "paraview",
     "post-processing",
     "openfoam",
@@ -19,5 +20,11 @@
     "simulation",
     "visualization",
     "mcp"
-  ]
+  ],
+  "mcp": {
+    "command": "mcp-server-parapilot",
+    "env": {
+      "PARAPILOT_OUTPUT_DIR": "/tmp/parapilot"
+    }
+  }
 }

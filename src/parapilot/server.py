@@ -619,9 +619,11 @@ def main() -> None:
 
     # Clean up any orphaned parapilot_* Docker containers from previous crashes
     try:
-        removed = asyncio.get_event_loop().run_until_complete(
+        loop = asyncio.new_event_loop()
+        removed = loop.run_until_complete(
             VTKRunner.cleanup_orphaned_containers()
         )
+        loop.close()
         if removed:
             print(f"parapilot: cleaned up {removed} orphaned container(s)", file=sys.stderr)
     except RuntimeError:
