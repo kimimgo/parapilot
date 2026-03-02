@@ -1,0 +1,15 @@
+.git
+.github
+.claude
+.claude-plugin
+www
+docs
+tests
+*.md
+*.lock
+__pycache__
+*.pyc
+.venv
+.env
+data
+output

@@ -1,0 +1,22 @@
+services:
+  parapilot:
+    build: .
+    image: parapilot:latest
+    volumes:
+      - ${PARAPILOT_DATA_DIR:-./data}:/data:ro
+      - ${PARAPILOT_OUTPUT_DIR:-./output}:/output
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
+      - PARAPILOT_RENDER_BACKEND=gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Uncomment for HTTP transport:
+    # ports:
+    #   - "8000:8000"
+    # command: ["mcp-server-parapilot", "--transport", "streamable-http", "--port", "8000"]
