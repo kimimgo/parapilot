@@ -1,13 +1,14 @@
 [project]
 name = "mcp-server-parapilot"
 version = "0.1.0"
-description = "Headless ParaView post-processing MCP server for CFD/CAE simulations"
+description = "Headless VTK/ParaView post-processing MCP server for CFD/CAE simulations"
 license = "MIT"
+readme = "README.md"
 requires-python = ">=3.10"
 authors = [
     { name = "Imgyu Kim", email = "kimimgo@gmail.com" }
 ]
-keywords = ["mcp", "paraview", "cfd", "cae", "post-processing", "simulation"]
+keywords = ["mcp", "vtk", "paraview", "cfd", "cae", "post-processing", "simulation"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
