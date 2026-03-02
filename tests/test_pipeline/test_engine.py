@@ -123,6 +123,7 @@ class TestValidatePipeline:
         """ProgrammableFilter should be accepted when PARAPILOT_ALLOW_PROGRAMMABLE=1."""
         monkeypatch.setenv("PARAPILOT_ALLOW_PROGRAMMABLE", "1")
         import importlib
+
         import parapilot.pipeline.engine as eng
         importlib.reload(eng)
         try:

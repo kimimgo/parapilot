@@ -4,14 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from parapilot.core.compiler import ScriptCompiler
 from parapilot.pipeline.engine import validate_pipeline
 from parapilot.pipeline.models import (
     GraphPaneDef,
     GraphSeriesDef,
-    LayoutDef,
     OutputDef,
     PaneDef,
     PipelineDefinition,

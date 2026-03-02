@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -229,7 +229,6 @@ class DataReader:
 
     def _read_pvd(self) -> None:
         """Parse PVD XML and set up reader for the file series."""
-        import vtk
 
         entries = _parse_pvd(self._path)
         if not entries:
@@ -253,7 +252,6 @@ class DataReader:
 
     def _read_series(self) -> None:
         """Parse .series JSON and set up reader for the file series."""
-        import vtk
 
         entries = _parse_series(self._path)
         if not entries:

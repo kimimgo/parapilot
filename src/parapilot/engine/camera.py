@@ -132,7 +132,7 @@ def custom_camera(
     )
 
 
-def apply_camera(renderer: "vtk.vtkRenderer", config: CameraConfig) -> None:
+def apply_camera(renderer: vtk.vtkRenderer, config: CameraConfig) -> None:
     """Apply a CameraConfig to a VTK renderer."""
     camera = renderer.GetActiveCamera()
     camera.SetPosition(*config.position)

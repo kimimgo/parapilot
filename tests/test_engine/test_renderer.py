@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from parapilot.engine.renderer import RenderConfig
 
 

@@ -9,12 +9,6 @@ from unittest.mock import patch
 import pytest
 
 from parapilot.pipeline.models import (
-    GraphPaneDef,
-    GraphSeriesDef,
-    LayoutDef,
-    PaneDef,
-    RenderDef,
-    RenderPaneDef,
     SplitAnimationDef,
 )
 

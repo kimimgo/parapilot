@@ -6,7 +6,6 @@ import pytest
 
 from parapilot.engine.physics import (
     REPRESENTATION_TYPES,
-    PhysicsType,
     SmartCamera,
     SmartDefaults,
     SmartRepresentation,
@@ -14,7 +13,6 @@ from parapilot.engine.physics import (
     analyze_camera,
     detect_physics,
 )
-
 
 # ── detect_physics ───────────────────────────────────────────────────
 

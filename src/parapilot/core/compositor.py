@@ -227,7 +227,7 @@ class Compositor:
         font: ImageFont.FreeTypeFont | ImageFont.ImageFont
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
-        except (OSError, IOError):
+        except OSError:
             font = ImageFont.load_default()
 
         for pane in self.split_anim.panes:

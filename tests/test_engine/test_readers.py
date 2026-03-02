@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import json
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -15,7 +12,6 @@ from parapilot.engine.readers import (
     _parse_series,
     supported_extensions,
 )
-
 
 # ---------------------------------------------------------------------------
 # supported_extensions

@@ -119,7 +119,7 @@ def build_lut(
     nan_color: tuple[float, float, float] = (0.5, 0.5, 0.5),
     above_range_color: tuple[float, float, float] | None = None,
     below_range_color: tuple[float, float, float] | None = None,
-) -> "vtk.vtkScalarsToColors":
+) -> vtk.vtkScalarsToColors:
     """Build a VTK lookup table from a named colormap preset.
 
     Args:

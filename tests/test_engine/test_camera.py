@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from math import sqrt
-
 import pytest
 
 from parapilot.engine.camera import (
@@ -11,7 +9,6 @@ from parapilot.engine.camera import (
     custom_camera,
     preset_camera,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
