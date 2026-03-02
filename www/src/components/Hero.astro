@@ -3,7 +3,7 @@ import CodeBlock from './CodeBlock.astro';
 ---
 
 <section class="relative overflow-hidden">
-  <!-- Background grid effect -->
+  <!-- Background grid + glow -->
   <div class="absolute inset-0 bg-[linear-gradient(rgba(0,212,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,212,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]"></div>
   <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-accent/5 rounded-full blur-[120px]"></div>
 
@@ -21,14 +21,23 @@ import CodeBlock from './CodeBlock.astro';
 
     <!-- Headline -->
     <h1 class="text-center text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight mb-4">
-      <span class="text-text-primary">AI가 CFD를 </span>
-      <span class="text-accent">렌더링</span>
-      <span class="text-text-primary">한다</span>
+      <span class="text-text-primary">CFD Post-processing</span><br />
+      <span class="text-text-primary">at </span>
+      <span class="text-accent">Prompt Speed</span>
     </h1>
 
     <p class="text-center text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-3">
       Headless ParaView MCP Server for AI Coding Assistants
     </p>
+
+    <!-- Client logos — Neon-style -->
+    <div class="flex items-center justify-center gap-2 flex-wrap mb-4 text-xs text-text-secondary font-mono">
+      <span class="opacity-50">works with</span>
+      <span class="px-2.5 py-1 rounded-md bg-secondary border border-border">Claude Code</span>
+      <span class="px-2.5 py-1 rounded-md bg-secondary border border-border">Cursor</span>
+      <span class="px-2.5 py-1 rounded-md bg-secondary border border-border">Gemini CLI</span>
+      <span class="px-2.5 py-1 rounded-md bg-secondary border border-border">Windsurf</span>
+    </div>
 
     <!-- Stats -->
     <div class="flex items-center justify-center gap-4 sm:gap-6 mb-10 text-sm font-mono">
@@ -39,7 +48,7 @@ import CodeBlock from './CodeBlock.astro';
       <span class="text-accent">146 tests</span>
     </div>
 
-    <!-- Terminal install -->
+    <!-- Terminal install CTA -->
     <div class="max-w-lg mx-auto mb-8">
       <CodeBlock code="pip install mcp-server-parapilot" lang="bash" />
     </div>
@@ -73,26 +82,73 @@ import CodeBlock from './CodeBlock.astro';
       </span>
     </div>
 
-    <!-- Demo placeholder -->
+    <!-- Terminal Demo — Atuin-style typing animation -->
     <div class="max-w-3xl mx-auto rounded-xl border border-border bg-secondary overflow-hidden glow-accent">
+      <!-- Window chrome -->
       <div class="flex items-center gap-2 px-4 py-2.5 border-b border-border">
         <div class="flex gap-1.5">
           <span class="w-3 h-3 rounded-full bg-[#ff5f57]"></span>
           <span class="w-3 h-3 rounded-full bg-[#febc2e]"></span>
           <span class="w-3 h-3 rounded-full bg-[#28c840]"></span>
         </div>
-        <span class="text-xs text-text-secondary font-mono ml-2">parapilot render output</span>
+        <span class="text-xs text-text-secondary font-mono ml-2">claude — parapilot demo</span>
       </div>
-      <div class="aspect-video bg-gradient-to-br from-tertiary via-secondary to-primary flex items-center justify-center">
-        <div class="text-center">
-          <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center">
-            <svg class="w-10 h-10 text-accent/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+
+      <!-- Terminal body with typing animation -->
+      <div class="relative font-mono text-sm p-5 min-h-[280px] bg-tertiary">
+        <!-- CRT scanline overlay -->
+        <div class="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,212,255,0.015)_2px,rgba(0,212,255,0.015)_4px)]"></div>
+
+        <!-- Line 1: User prompt -->
+        <div class="terminal-line mb-4" style="--delay: 0s">
+          <span class="text-accent/60">$</span>
+          <span class="text-text-secondary ml-2">claude</span>
+        </div>
+
+        <!-- Line 2: User message -->
+        <div class="terminal-line mb-4" style="--delay: 0.8s">
+          <span class="text-accent/40 text-xs">you &gt;</span>
+          <span class="typing-text text-text-primary ml-2">"cavity 케이스의 압력 분포를 contour plot으로 보여줘"</span>
+        </div>
+
+        <!-- Line 3: Tool call -->
+        <div class="terminal-line mb-2" style="--delay: 2.5s">
+          <span class="text-accent/40 text-xs">mcp &gt;</span>
+          <span class="text-accent ml-2">parapilot.contour</span>
+          <span class="text-text-secondary">(</span>
+        </div>
+        <div class="terminal-line mb-0 pl-12" style="--delay: 2.8s">
+          <span class="text-text-secondary">file=</span><span class="text-[#a5d6ff]">"cavity.foam"</span><span class="text-text-secondary">,</span>
+        </div>
+        <div class="terminal-line mb-0 pl-12" style="--delay: 3.1s">
+          <span class="text-text-secondary">field=</span><span class="text-[#a5d6ff]">"p"</span><span class="text-text-secondary">,</span>
+        </div>
+        <div class="terminal-line mb-2 pl-12" style="--delay: 3.4s">
+          <span class="text-text-secondary">colormap=</span><span class="text-[#a5d6ff]">"RdBu"</span>
+          <span class="text-text-secondary">)</span>
+        </div>
+
+        <!-- Line 4: Result -->
+        <div class="terminal-line mb-2" style="--delay: 4.2s">
+          <span class="text-[#28c840]">&#10003;</span>
+          <span class="text-text-secondary ml-2">Rendered to</span>
+          <span class="text-accent ml-1">contour_p.png</span>
+          <span class="text-text-secondary ml-1">(1920x1080, 0.8s)</span>
+        </div>
+
+        <!-- Line 5: Image placeholder with gradient -->
+        <div class="terminal-line" style="--delay: 4.8s">
+          <div class="mt-2 rounded-lg border border-border overflow-hidden h-24 bg-gradient-to-r from-[#2563eb] via-[#10b981] via-[#eab308] to-[#ef4444] opacity-80">
+            <div class="w-full h-full flex items-center justify-center backdrop-blur-[1px]">
+              <span class="text-white/70 text-xs font-mono drop-shadow-lg">▸ pressure contour — RdBu colormap</span>
+            </div>
           </div>
-          <p class="text-text-secondary text-sm">CFD pressure field + streamline visualization</p>
-          <p class="text-text-secondary/50 text-xs mt-1">Rendered by parapilot</p>
+        </div>
+
+        <!-- Blinking cursor -->
+        <div class="terminal-line mt-3" style="--delay: 5.5s">
+          <span class="text-accent/60">$</span>
+          <span class="typing-cursor ml-1"></span>
         </div>
       </div>
     </div>
