@@ -39,8 +39,8 @@ async def slice_impl(
             FilterStep(
                 filter="Slice",
                 params={
-                    "origin": origin or [0, 0, 0],
-                    "normal": normal or [0, 0, 1],
+                    **({"origin": origin} if origin else {}),
+                    **({"normal": normal} if normal else {}),
                 },
             ),
         ],
@@ -113,8 +113,8 @@ async def clip_impl(
             FilterStep(
                 filter="Clip",
                 params={
-                    "origin": origin or [0, 0, 0],
-                    "normal": normal or [1, 0, 0],
+                    **({"origin": origin} if origin else {}),
+                    **({"normal": normal} if normal else {}),
                     "invert": invert,
                 },
             ),

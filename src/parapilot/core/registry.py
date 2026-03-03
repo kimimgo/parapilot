@@ -23,14 +23,14 @@ FILTER_REGISTRY: dict[str, dict[str, Any]] = {
     "Slice": {
         "vtk_class": "vtkCutter",
         "params": {
-            "origin": {"type": "list[float]", "length": 3, "required": True},
+            "origin": {"type": "list[float]", "length": 3, "default": None},
             "normal": {"type": "list[float]", "length": 3, "default": [0, 0, 1]},
         },
     },
     "Clip": {
         "vtk_class": "vtkClipDataSet",
         "params": {
-            "origin": {"type": "list[float]", "length": 3, "default": [0, 0, 0]},
+            "origin": {"type": "list[float]", "length": 3, "default": None},
             "normal": {"type": "list[float]", "length": 3, "default": [1, 0, 0]},
             "invert": {"type": "bool", "default": False},
         },

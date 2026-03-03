@@ -69,7 +69,7 @@ class TestFilterRegistry:
 
     def test_validate_params_missing_required(self):
         with pytest.raises(ValueError, match="requires parameter"):
-            validate_filter_params("Slice", {})
+            validate_filter_params("Contour", {})
 
     def test_validate_paramless_filter(self):
         result = validate_filter_params("IntegrateVariables", {})

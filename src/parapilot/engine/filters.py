@@ -51,20 +51,27 @@ class FilterSpec(Protocol):
 
 def slice_plane(
     data: vtk.vtkDataObject,
-    origin: tuple[float, float, float],
+    origin: tuple[float, float, float] | None = None,
     normal: tuple[float, float, float] = (0.0, 0.0, 1.0),
 ) -> vtk.vtkDataObject:
     """Slice dataset with a plane.
 
     Args:
         data: Input VTK dataset.
-        origin: Point on the plane (x, y, z).
+        origin: Point on the plane (x, y, z). None = dataset center.
         normal: Plane normal direction (nx, ny, nz).
 
     Returns:
         Sliced polydata.
     """
     import vtk
+
+    # Auto-compute origin from dataset center if not specified
+    if origin is None and hasattr(data, "GetBounds"):
+        b = data.GetBounds()
+        origin = ((b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2)
+    elif origin is None:
+        origin = (0.0, 0.0, 0.0)
 
     plane = vtk.vtkPlane()
     plane.SetOrigin(*origin)
@@ -79,7 +86,7 @@ def slice_plane(
 
 def clip_plane(
     data: vtk.vtkDataObject,
-    origin: tuple[float, float, float],
+    origin: tuple[float, float, float] | None = None,
     normal: tuple[float, float, float] = (0.0, 0.0, 1.0),
     inside_out: bool = False,
     invert: bool | None = None,
@@ -88,7 +95,7 @@ def clip_plane(
 
     Args:
         data: Input VTK dataset.
-        origin: Point on the plane (x, y, z).
+        origin: Point on the plane (x, y, z). None = dataset center.
         normal: Plane normal direction (nx, ny, nz).
         inside_out: If True, keep the half-space behind the plane.
         invert: Alias for inside_out (registry compatibility).
@@ -100,6 +107,13 @@ def clip_plane(
 
     if invert is not None:
         inside_out = invert
+
+    # Auto-compute origin from dataset center if not specified
+    if origin is None and hasattr(data, "GetBounds"):
+        b = data.GetBounds()
+        origin = ((b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2)
+    elif origin is None:
+        origin = (0.0, 0.0, 0.0)
 
     plane = vtk.vtkPlane()
     plane.SetOrigin(*origin)
