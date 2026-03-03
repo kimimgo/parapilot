@@ -151,6 +151,81 @@ const multiview = [
   },
 ];
 
+const domains = [
+  {
+    src: '/parapilot/showcase/ocean_antarctica.png',
+    title: 'Ocean — Antarctic Ice Velocity',
+    desc: '557K pts — Ice flow velocity, magnitude + vector components',
+    domain: 'Marine',
+  },
+  {
+    src: '/parapilot/showcase/mech_bracket.png',
+    title: 'Mechanical — FEA Bracket',
+    desc: '187K pts — Von Mises stress, displacement, strain analysis',
+    domain: 'Mechanical',
+  },
+  {
+    src: '/parapilot/showcase/aero_cylinder.png',
+    title: 'Aerodynamics — Cylinder Flow',
+    desc: 'NACA airfoil density + cylinder crossflow pressure, vorticity',
+    domain: 'Aero',
+  },
+  {
+    src: '/parapilot/showcase/elec_cooling.png',
+    title: 'Electronics — PCB Cooling',
+    desc: '798K pts — Temperature, heat flux, fluid velocity on PCB',
+    domain: 'Electronics',
+  },
+  {
+    src: '/parapilot/showcase/bio_blood.png',
+    title: 'Biomedical — Blood Vessel',
+    desc: 'Velocity, wall shear stress, density in vasculature',
+    domain: 'Biomedical',
+  },
+  {
+    src: '/parapilot/showcase/earth_volcano.png',
+    title: 'Earth Science — Mt. St. Helens',
+    desc: '3D terrain warp + global topography, elevation colormaps',
+    domain: 'Geoscience',
+  },
+  {
+    src: '/parapilot/showcase/env_particles.png',
+    title: 'Environmental — Particle DEM',
+    desc: 'Lethe particles — velocity, angular velocity, contact force',
+    domain: 'Environmental',
+  },
+  {
+    src: '/parapilot/showcase/chem_process.png',
+    title: 'Chemical — Blow Molding',
+    desc: '4-step polymer forming — wall thickness + deformation evolution',
+    domain: 'Process',
+  },
+  {
+    src: '/parapilot/showcase/arch_structural.png',
+    title: 'Architecture — Structural FEA',
+    desc: '250K pts pump bracket displacement + building HVAC zone mesh',
+    domain: 'Structural',
+  },
+  {
+    src: '/parapilot/showcase/naval_hydro.png',
+    title: 'Naval — Hull Curvature',
+    desc: 'Gaussian + mean curvature analysis, surface normals on hull form',
+    domain: 'Naval',
+  },
+  {
+    src: '/parapilot/showcase/space_stellar.png',
+    title: 'Aerospace — Stellar Catalog',
+    desc: 'HYG star database — luminosity, color index, global topography',
+    domain: 'Aerospace',
+  },
+  {
+    src: '/parapilot/showcase/urban_lidar.png',
+    title: 'Urban — LiDAR Point Cloud',
+    desc: '3.4M pts — Building heights, elevation mapping, 3D terrain',
+    domain: 'Urban',
+  },
+];
+
 const analysis = [
   {
     src: '/parapilot/showcase/ct_density_profile.png',
@@ -201,7 +276,7 @@ const videos = [
         <span class="gradient-text-white">Real renders, zero GUI</span>
       </h2>
       <p class="mt-4 text-text-secondary max-w-xl mx-auto text-lg">
-        13 datasets from medical, CFD, FEA, automotive aero — 8 tools, multi-view + volume + surface
+        13 engineering domains, 25+ datasets — multi-view, volume, surface, animation across all CAE fields
       </p>
     </div>
 
@@ -303,6 +378,49 @@ const videos = [
                 </div>
                 <h3 class="text-sm font-semibold text-text-primary">{m.title}</h3>
                 <p class="text-xs text-text-secondary/70 mt-0.5">{m.desc}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Engineering Domains showcase -->
+    <div class="mt-16 fade-up">
+      <div class="text-center mb-8">
+        <span class="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-mono font-medium tracking-wider mb-3">
+          13 ENGINEERING DOMAINS
+        </span>
+        <h3 class="text-2xl sm:text-3xl font-bold tracking-tight">
+          <span class="gradient-text-white">From ocean to outer space</span>
+        </h3>
+        <p class="mt-3 text-text-secondary max-w-lg mx-auto">
+          Marine, mechanical, aero, electronics, biomedical, geoscience, environmental, chemical, structural, naval, aerospace, and urban engineering
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {domains.map((d) => (
+          <div class="card-hover overflow-hidden group cursor-default">
+            <div class="relative">
+              <picture>
+                <source srcset={d.src.replace('.png', '.webp')} type="image/webp" />
+                <img
+                  src={d.src}
+                  alt={d.title}
+                  class="w-full h-auto transition-transform duration-500 group-hover:scale-[1.02]"
+                  loading="lazy"
+                />
+              </picture>
+              <div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
+              <div class="absolute top-2 right-2">
+                <span class="px-1.5 py-0.5 rounded-full bg-cyan-500/30 text-cyan-400 text-[9px] font-mono backdrop-blur-sm">
+                  {d.domain}
+                </span>
+              </div>
+              <div class="absolute bottom-0 left-0 right-0 p-3">
+                <h3 class="text-xs font-semibold text-text-primary leading-tight">{d.title}</h3>
+                <p class="text-[10px] text-text-secondary/70 mt-0.5 leading-tight">{d.desc}</p>
               </div>
             </div>
           </div>
@@ -452,7 +570,7 @@ const videos = [
 
     <div class="text-center mt-10">
       <p class="text-text-secondary/50 text-sm font-mono">
-        render &middot; contour &middot; streamlines &middot; clip &middot; slice &middot; animate &middot; extract_stats &middot; plot_over_line &mdash; 8 tools, 13 datasets, 14 colormaps
+        render &middot; contour &middot; streamlines &middot; clip &middot; slice &middot; animate &middot; extract_stats &middot; plot_over_line &mdash; 8 tools, 25+ datasets, 13 domains, 14 colormaps
       </p>
     </div>
   </div>
