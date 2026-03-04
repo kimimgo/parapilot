@@ -560,7 +560,96 @@ def run_orbit_render(name: str, code: str) -> bool:
     return True
 
 
+def verify_showcase() -> bool:
+    """Verify all showcase images referenced by Showcase.astro exist and are valid.
+
+    Checks:
+    - File existence
+    - File size > 1KB (detects empty/corrupt files)
+    - PNG header magic bytes (for .png files)
+    """
+    showcase_astro = PROJECT_ROOT / "www" / "src" / "components" / "Showcase.astro"
+    if not showcase_astro.exists():
+        print(f"ERROR: {showcase_astro} not found")
+        return False
+
+    import re
+    content = showcase_astro.read_text()
+
+    # Extract all image references from Showcase.astro
+    refs: list[str] = []
+    for match in re.finditer(r"'/parapilot/showcase/([^']+)'", content):
+        refs.append(match.group(1))
+
+    refs = sorted(set(refs))
+    print(f"Found {len(refs)} unique asset references in Showcase.astro\n")
+
+    ok = 0
+    errors = 0
+    warnings = 0
+    total_bytes = 0
+
+    for fname in refs:
+        fpath = OUT_DIR / fname
+        if not fpath.exists():
+            print(f"  MISSING  {fname}")
+            errors += 1
+            continue
+
+        size = fpath.stat().st_size
+        total_bytes += size
+        size_kb = size // 1024
+
+        if size < 1024:
+            print(f"  TINY     {fname} ({size}B) — likely empty/corrupt")
+            errors += 1
+            continue
+
+        # Check PNG magic bytes
+        if fname.endswith(".png"):
+            with open(fpath, "rb") as f:
+                header = f.read(8)
+            if header[:4] != b"\x89PNG":
+                print(f"  CORRUPT  {fname} — invalid PNG header")
+                errors += 1
+                continue
+
+        # Warn on suspiciously small images (< 10KB for PNG/WebP)
+        if fname.endswith((".png", ".webp")) and size_kb < 10:
+            print(f"  WARN     {fname} ({size_kb}KB) — possibly blank render")
+            warnings += 1
+
+        ok += 1
+
+    total_mb = total_bytes / (1024 * 1024)
+    print(f"\nResults: {ok}/{len(refs)} OK, {errors} errors, {warnings} warnings")
+    print(f"Total size: {total_mb:.1f} MB")
+
+    # Also check for unreferenced files in showcase dir
+    if OUT_DIR.exists():
+        all_files = {f.name for f in OUT_DIR.iterdir() if f.is_file()}
+        referenced = set(refs)
+        unreferenced = sorted(all_files - referenced)
+        if unreferenced:
+            unreferenced_size = sum((OUT_DIR / f).stat().st_size for f in unreferenced)
+            print(f"\nUnreferenced files ({len(unreferenced)}, {unreferenced_size // 1024}KB):")
+            for f in unreferenced:
+                s = (OUT_DIR / f).stat().st_size // 1024
+                print(f"  {f} ({s}KB)")
+
+    return errors == 0
+
+
 def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser(description="Generate or verify parapilot showcase renders")
+    parser.add_argument("--verify", action="store_true", help="Verify existing showcase images only")
+    args = parser.parse_args()
+
+    if args.verify:
+        ok = verify_showcase()
+        sys.exit(0 if ok else 1)
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     print(f"Downloading {len(DATA_FILES)} example datasets...\n")

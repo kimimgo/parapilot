@@ -483,6 +483,7 @@ def _build_scalar_bar(
 def _capture_png(rw: vtk.vtkRenderWindow) -> bytes:
     """Capture render window to PNG bytes (no temp file)."""
     import vtk
+    from vtkmodules.util.numpy_support import vtk_to_numpy
 
     w2i = vtk.vtkWindowToImageFilter()
     w2i.SetInput(rw)
@@ -496,9 +497,7 @@ def _capture_png(rw: vtk.vtkRenderWindow) -> bytes:
     writer.Write()
 
     data = writer.GetResult()
-    # vtkUnsignedCharArray → Python bytes
-    n = data.GetNumberOfValues()
-    return bytes(data.GetValue(i) for i in range(n))
+    return vtk_to_numpy(data).tobytes()  # type: ignore[no-untyped-call,no-any-return]
 
 
 # ---------------------------------------------------------------------------
