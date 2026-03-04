@@ -27,6 +27,19 @@ const clients = [
     desc: 'OpenAI CLI — 동일 MCP 설정으로 연동',
   },
   {
+    name: 'Gemini CLI',
+    icon: 'terminal',
+    config: `.mcp.json`,
+    code: `{
+  "mcpServers": {
+    "parapilot": {
+      "command": "mcp-server-parapilot"
+    }
+  }
+}`,
+    desc: 'Google CLI — 동일 MCP 표준 프로토콜',
+  },
+  {
     name: 'Cursor / Windsurf',
     icon: 'code',
     config: `MCP Settings`,
@@ -58,7 +71,7 @@ const clients = [
     </div>
 
     <!-- Client cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 fade-up">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 fade-up">
       {clients.map((client) => (
         <div class="card-hover p-6">
           <div class="flex items-center gap-3 mb-4">

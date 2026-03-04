@@ -43,8 +43,9 @@ dev = [
 mcp-server-parapilot = "parapilot.server:main"
 
 [project.urls]
-Homepage = "https://github.com/kimimgo/parapilot"
+Homepage = "https://kimimgo.github.io/parapilot"
 Repository = "https://github.com/kimimgo/parapilot"
+Documentation = "https://kimimgo.github.io/parapilot"
 Issues = "https://github.com/kimimgo/parapilot/issues"
 
 [build-system]
