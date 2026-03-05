@@ -27,7 +27,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-__all__ = [
+__all__: list[str] = [
     "OverlayTheme",
     "ScalarBarConfig",
     "compose",
@@ -39,11 +39,13 @@ __all__ = [
 ]
 
 # Reference resolution for all base dimensions (720p).
-_REF_DIAG = sqrt(1280**2 + 720**2)  # ~1468.6
+_REF_DIAG: float = sqrt(1280**2 + 720**2)  # ~1468.6
 
 
 def _scale(img: Image.Image) -> float:
     """Compute scale factor relative to 1280x720 reference."""
+    w: int
+    h: int
     w, h = img.size
     return sqrt(w * w + h * h) / _REF_DIAG
 
@@ -77,14 +79,14 @@ def _find_font(style: str = "sans", bold: bool = False) -> str | None:
         "sans": ["NanumGothic", "DejaVuSans", "LiberationSans"],
         "mono": ["NotoSansMono", "DejaVuSansMono"],
     }
-    names = patterns.get(style, patterns["sans"])
-    bold_suffix = "Bold"
+    names: list[str] = patterns.get(style, patterns["sans"])
+    bold_suffix: str = "Bold"
 
     for path_str in _FONT_SEARCH_PATHS:
-        p = Path(path_str)
+        p: Path = Path(path_str)
         if not p.exists():
             continue
-        stem = p.stem
+        stem: str = p.stem
         for name in names:
             if name in stem:
                 if bold and bold_suffix in stem:
@@ -99,11 +101,12 @@ def _find_font(style: str = "sans", bold: bool = False) -> str | None:
 
 def get_font(size: int, style: str = "sans", bold: bool = False) -> ImageFont.FreeTypeFont:
     """Get a cached font. Falls back to Pillow default if no TTF found."""
-    key = (f"{style}_{bold}", size)
+    key: tuple[str, int] = (f"{style}_{bold}", size)
     if key in _font_cache:
         return _font_cache[key]
 
-    path = _find_font(style, bold)
+    path: str | None = _find_font(style, bold)
+    font: ImageFont.FreeTypeFont
     if path is not None:
         font = ImageFont.truetype(path, size)
     else:
@@ -202,30 +205,33 @@ def _sample_colormap(name: str, n: int = 256) -> list[tuple[int, int, int]]:
     """Sample colormap into n RGB tuples (0-255)."""
     from .colormaps import COLORMAP_REGISTRY
 
-    key = name.lower().strip()
-    pts = COLORMAP_REGISTRY.get(key)
+    key: str = name.lower().strip()
+    pts: list[tuple[float, float, float, float]] | None = COLORMAP_REGISTRY.get(key)
     if pts is None:
         pts = COLORMAP_REGISTRY.get(
-            "cool to warm", [(0, 0.5, 0.5, 0.5), (1, 0.5, 0.5, 0.5)],
+            "cool to warm", [(0.0, 0.5, 0.5, 0.5), (1.0, 0.5, 0.5, 0.5)],
         )
+
+    # Note: pts is now guaranteed to be a list due to the fallback
+    valid_pts: list[tuple[float, float, float, float]] = pts
 
     colors: list[tuple[int, int, int]] = []
     for i in range(n):
-        t = i / max(n - 1, 1)
-        lo_idx = 0
-        for j in range(len(pts) - 1):
-            if pts[j + 1][0] >= t:
+        t: float = i / max(n - 1, 1)
+        lo_idx: int = 0
+        for j in range(len(valid_pts) - 1):
+            if valid_pts[j + 1][0] >= t:
                 lo_idx = j
                 break
         else:
-            lo_idx = len(pts) - 2
+            lo_idx = len(valid_pts) - 2
 
-        p0, r0, g0, b0 = pts[lo_idx]
-        p1, r1, g1, b1 = pts[lo_idx + 1]
-        frac = max(0.0, min(1.0, (t - p0) / max(p1 - p0, 1e-10)))
-        r = r0 + (r1 - r0) * frac
-        g = g0 + (g1 - g0) * frac
-        b = b0 + (b1 - b0) * frac
+        p0, r0, g0, b0 = valid_pts[lo_idx]
+        p1, r1, g1, b1 = valid_pts[lo_idx + 1]
+        frac: float = max(0.0, min(1.0, (t - p0) / max(p1 - p0, 1e-10)))
+        r: float = r0 + (r1 - r0) * frac
+        g: float = g0 + (g1 - g0) * frac
+        b: float = b0 + (b1 - b0) * frac
         colors.append((int(r * 255), int(g * 255), int(b * 255)))
 
     return colors
@@ -249,12 +255,14 @@ def draw_scalar_bar(
     y_bottom: int | None = None,
 ) -> int:
     """Draw vertical scalar bar. Returns panel width."""
+    w: int
+    h: int
     w, h = img.size
-    sc = _scale(img)
+    sc: float = _scale(img)
 
-    margin = _s(theme.base_margin, sc)
-    bar_w = _s(theme.base_bar_width, sc)
-    bar_h = int(h * theme.bar_height_ratio)
+    margin: int = _s(theme.base_margin, sc)
+    bar_w: int = _s(theme.base_bar_width, sc)
+    bar_h: int = int(h * theme.bar_height_ratio)
 
     if y_top is None:
         y_top = margin + _s(12, sc)
@@ -263,31 +271,34 @@ def draw_scalar_bar(
     bar_h = y_bottom - y_top
 
     # Scaled fonts
-    label_font = get_font(_s(theme.base_label_size, sc), "mono")
-    title_font = get_font(_s(theme.base_bar_title_size, sc), "sans", bold=True)
+    label_font: ImageFont.FreeTypeFont = get_font(_s(theme.base_label_size, sc), "mono")
+    title_font: ImageFont.FreeTypeFont = get_font(_s(theme.base_bar_title_size, sc), "sans", bold=True)
 
     # Measure label width
+    lo: float
+    hi: float
     lo, hi = config.range
-    samples = [format(v, config.label_format) for v in (lo, hi, (lo + hi) / 2)]
-    label_w = max(int(label_font.getlength(s)) for s in samples)
+    samples: list[str] = [format(v, config.label_format) for v in (lo, hi, (lo + hi) / 2)]
+    label_w: int = max(int(label_font.getlength(s)) for s in samples)
 
-    gap = _s(10, sc)
-    pad = _s(16, sc)
-    title_h = _s(28, sc) if config.title else 0
+    gap: int = _s(10, sc)
+    pad: int = _s(16, sc)
+    title_h: int = _s(28, sc) if config.title else 0
 
-    panel_w = pad + label_w + gap + bar_w + pad
+    panel_w: int = pad + label_w + gap + bar_w + pad
 
+    panel_x: int
     if config.position == "right":
         panel_x = w - margin - panel_w
     else:
         panel_x = margin
 
-    bar_x = panel_x + pad + label_w + gap
-    label_x_right = bar_x - gap
+    bar_x: int = panel_x + pad + label_w + gap
+    label_x_right: int = bar_x - gap
 
     # Background panel
-    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay, "RGBA")
+    overlay: Image.Image = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw: ImageDraw.ImageDraw = ImageDraw.Draw(overlay, "RGBA")
 
     draw.rounded_rectangle(
         [panel_x, y_top - pad - title_h, panel_x + panel_w, y_bottom + pad],
@@ -296,8 +307,8 @@ def draw_scalar_bar(
     )
 
     # Gradient strip — bulk pixel write (much faster than per-row draw.line)
-    colors = _sample_colormap(config.colormap, bar_h)
-    grad = Image.new("RGB", (1, bar_h))
+    colors: list[tuple[int, int, int]] = _sample_colormap(config.colormap, bar_h)
+    grad: Image.Image = Image.new("RGB", (1, bar_h))
     grad.putdata([colors[bar_h - 1 - i] for i in range(bar_h)])
     grad = grad.resize((bar_w, bar_h), Image.Resampling.NEAREST)
     overlay.paste(grad, (bar_x, y_top))
@@ -310,16 +321,16 @@ def draw_scalar_bar(
     )
 
     # Tick labels
-    label_half_h = _s(9, sc)
-    tick_w = _s(5, sc)
+    label_half_h: int = _s(9, sc)
+    tick_w: int = _s(5, sc)
     for i in range(config.n_labels):
-        frac = i / max(config.n_labels - 1, 1)
-        val = lo + frac * (hi - lo)
-        label = format(val, config.label_format)
-        y_tick = y_bottom - int(frac * bar_h)
+        frac: float = i / max(config.n_labels - 1, 1)
+        val: float = lo + frac * (hi - lo)
+        label: str = format(val, config.label_format)
+        y_tick: int = y_bottom - int(frac * bar_h)
 
-        tw = int(label_font.getlength(label))
-        lx = label_x_right - tw
+        tw: int = int(label_font.getlength(label))
+        lx: int = label_x_right - tw
         draw.text((lx, y_tick - label_half_h), label, fill=theme.text_muted, font=label_font)
         draw.line(
             [(bar_x - tick_w, y_tick), (bar_x, y_tick)],
@@ -330,7 +341,7 @@ def draw_scalar_bar(
     # Title above bar
     if config.title:
         tw = int(title_font.getlength(config.title))
-        tx = panel_x + (panel_w - tw) // 2
+        tx: int = panel_x + (panel_w - tw) // 2
         draw.text(
             (tx, y_top - pad - title_h + _s(4, sc)),
             config.title,
@@ -350,25 +361,32 @@ def draw_title(
     position: str = "top_left",
 ) -> int:
     """Draw title + subtitle. Returns height consumed."""
-    sc = _scale(img)
-    margin = _s(theme.base_margin, sc)
+    sc: float = _scale(img)
+    margin: int = _s(theme.base_margin, sc)
 
-    title_font = get_font(_s(theme.base_title_size, sc), "sans", bold=True)
-    sub_font = get_font(_s(theme.base_subtitle_size, sc), "mono")
+    title_font: ImageFont.FreeTypeFont = get_font(_s(theme.base_title_size, sc), "sans", bold=True)
+    sub_font: ImageFont.FreeTypeFont = get_font(_s(theme.base_subtitle_size, sc), "mono")
 
-    title_bbox = title_font.getbbox(title) if title else (0, 0, 0, 0)
-    sub_bbox = sub_font.getbbox(subtitle) if subtitle else (0, 0, 0, 0)
-    title_h = title_bbox[3] - title_bbox[1] if title else 0
-    sub_h = sub_bbox[3] - sub_bbox[1] if subtitle else 0
-    title_w = int(title_font.getlength(title)) if title else 0
-    sub_w = int(sub_font.getlength(subtitle)) if subtitle else 0
-    max_w = max(title_w, sub_w)
-    gap = _s(10, sc)
-    total_h = title_h + (sub_h + gap if subtitle else 0)
+    title_bbox: tuple[float, float, float, float] | tuple[int, int, int, int] = (
+        title_font.getbbox(title) if title else (0, 0, 0, 0)
+    )
+    sub_bbox: tuple[float, float, float, float] | tuple[int, int, int, int] = (
+        sub_font.getbbox(subtitle) if subtitle else (0, 0, 0, 0)
+    )
 
-    w = img.size[0]
-    pad = _s(14, sc)
+    title_h: int = int(title_bbox[3] - title_bbox[1]) if title else 0
+    sub_h: int = int(sub_bbox[3] - sub_bbox[1]) if subtitle else 0
 
+    title_w: int = int(title_font.getlength(title)) if title else 0
+    sub_w: int = int(sub_font.getlength(subtitle)) if subtitle else 0
+    max_w: int = max(title_w, sub_w)
+    gap: int = _s(10, sc)
+    total_h: int = title_h + (sub_h + gap if subtitle else 0)
+
+    w: int = img.size[0]
+    pad: int = _s(14, sc)
+
+    x: int
     if "right" in position:
         x = w - margin - max_w - pad
     elif "center" in position:
@@ -376,10 +394,10 @@ def draw_title(
     else:
         x = margin
 
-    y = margin
+    y: int = margin
 
-    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay, "RGBA")
+    overlay: Image.Image = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw: ImageDraw.ImageDraw = ImageDraw.Draw(overlay, "RGBA")
 
     draw.rounded_rectangle(
         [x - pad, y - pad, x + max_w + pad, y + total_h + pad],
@@ -387,7 +405,7 @@ def draw_title(
         fill=theme.bg,
     )
 
-    cy = y
+    cy: int = y
     if title:
         draw.text((x, cy), title, fill=theme.text_primary, font=title_font)
         cy += int(title_h) + gap
@@ -404,18 +422,20 @@ def draw_watermark(
     theme: OverlayTheme,
 ) -> None:
     """Draw subtle watermark at bottom-right."""
-    sc = _scale(img)
-    margin = _s(theme.base_margin, sc)
-    font = get_font(_s(theme.base_watermark_size, sc), "mono")
+    sc: float = _scale(img)
+    margin: int = _s(theme.base_margin, sc)
+    font: ImageFont.FreeTypeFont = get_font(_s(theme.base_watermark_size, sc), "mono")
+    w: int
+    h: int
     w, h = img.size
 
-    tw = int(font.getlength(text))
-    pad = _s(6, sc)
-    x = w - margin - tw
-    y = h - margin
+    tw: int = int(font.getlength(text))
+    pad: int = _s(6, sc)
+    x: int = w - margin - tw
+    y: int = h - margin
 
-    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay, "RGBA")
+    overlay: Image.Image = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw: ImageDraw.ImageDraw = ImageDraw.Draw(overlay, "RGBA")
 
     draw.rounded_rectangle(
         [x - pad, y - pad, x + tw + pad, y + _s(22, sc)],
@@ -446,19 +466,21 @@ def compose_image(
     Use this for animation pipelines to avoid intermediate PNG serialization.
     For single images, use :func:`compose` which returns PNG bytes.
     """
+    base: Image.Image
     if isinstance(raw_png, Image.Image):
         base = raw_png
     else:
         base = Image.open(io.BytesIO(raw_png))
 
+    img: Image.Image
     if base.mode == "RGBA":
-        opaque = Image.new("RGB", base.size, (0, 0, 0))
+        opaque: Image.Image = Image.new("RGB", base.size, (0, 0, 0))
         opaque.paste(base, mask=base.split()[3])
         img = opaque.convert("RGBA")
     else:
         img = base.convert("RGBA")
 
-    th = THEMES.get(theme, THEMES["dark"]) if isinstance(theme, str) else theme
+    th: OverlayTheme = THEMES.get(theme, THEMES["dark"]) if isinstance(theme, str) else theme
 
     if scalar_bar is not None:
         draw_scalar_bar(img, scalar_bar, th)
@@ -499,7 +521,7 @@ def compose(
     Returns:
         Final composited PNG as bytes.
     """
-    img = compose_image(
+    img: Image.Image = compose_image(
         raw_png,
         title=title,
         subtitle=subtitle,
@@ -508,6 +530,6 @@ def compose(
         theme=theme,
         title_position=title_position,
     )
-    buf = io.BytesIO()
+    buf: io.BytesIO = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
