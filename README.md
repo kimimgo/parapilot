@@ -1,7 +1,9 @@
 # parapilot
 
 [![CI](https://github.com/kimimgo/parapilot/actions/workflows/ci.yml/badge.svg)](https://github.com/kimimgo/parapilot/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/kimimgo/parapilot/branch/main/graph/badge.svg)](https://codecov.io/gh/kimimgo/parapilot)
 [![PyPI](https://img.shields.io/pypi/v/mcp-server-parapilot)](https://pypi.org/project/mcp-server-parapilot/)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-server-parapilot)](https://pypi.org/project/mcp-server-parapilot/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/kimimgo/parapilot/blob/main/LICENSE)
 
 Headless CAE post-processing MCP server for AI coding assistants.
@@ -150,7 +152,7 @@ OpenFOAM (.foam), VTK (.vti/.vtp/.vtu/.vtm), CGNS (.cgns), Ensight (.case), Exod
 git clone https://github.com/kimimgo/parapilot
 cd parapilot
 pip install -e ".[dev]"
-pytest                     # 310 tests
+pytest                     # 331 tests
 ruff check src/ tests/     # lint
 mypy src/parapilot/        # type check
 ```
@@ -160,10 +162,17 @@ mypy src/parapilot/        # type check
 | | parapilot | LLNL/paraview_mcp | Kitware/vtk-mcp |
 |---|---|---|---|
 | Rendering | Headless VTK + ParaView | GUI-attached only | None (docs search) |
-| Tests | 310 | 0 | 0 |
+| Tests | 331 | 0 | 0 |
 | Docker | GPU (EGL) | No | No |
 | MCP Tools | 13 | 8 | 3 |
 | Plugin | Claude Code plugin | No | No |
+
+## Known Limitations
+
+- Validated with VTK example datasets only — large-scale industrial data (100M+ cells) is unverified
+- Headless rendering means no real-time visual feedback to catch LLM-generated parameter errors
+- No simulation steering, multi-physics coupling, or uncertainty quantification
+- When ParaView natively integrates MCP, this wrapper approach may become redundant
 
 ## License
 

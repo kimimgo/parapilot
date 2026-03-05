@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from parapilot.logging import get_logger
+
 if TYPE_CHECKING:
     import vtk
 
@@ -12,7 +14,10 @@ __all__ = [
     "RenderConfig",
     "VTKRenderer",
     "render_to_png",
+    "cleanup",
 ]
+
+logger = get_logger("renderer")
 
 
 @dataclass
@@ -42,6 +47,7 @@ class RenderConfig:
 # ---------------------------------------------------------------------------
 
 _RENDER_WINDOW: vtk.vtkRenderWindow | None = None
+_RENDER_COUNT: int = 0
 
 
 def _get_render_window(width: int, height: int) -> vtk.vtkRenderWindow:
@@ -50,20 +56,39 @@ def _get_render_window(width: int, height: int) -> vtk.vtkRenderWindow:
     Uses vtkRenderWindow() which respects VTK_DEFAULT_OPENGL_WINDOW env var
     to select EGL (GPU) or OSMesa (CPU) backend via VTK's factory mechanism.
     Direct vtkEGLRenderWindow() construction causes SIGSEGV in pip-installed VTK.
+
+    Regenerates the window every 100 renders to prevent GPU memory leaks.
     """
     import vtk
 
-    global _RENDER_WINDOW  # noqa: PLW0603
+    global _RENDER_WINDOW, _RENDER_COUNT  # noqa: PLW0603
+
+    _RENDER_COUNT += 1
+    if _RENDER_COUNT % 100 == 0:
+        logger.info("render window: regenerating after %d renders", _RENDER_COUNT)
+        _RENDER_WINDOW = None
 
     if _RENDER_WINDOW is not None:
         _RENDER_WINDOW.SetSize(width, height)
         return _RENDER_WINDOW
 
+    logger.debug("render window: creating new %dx%d", width, height)
     rw = vtk.vtkRenderWindow()
     rw.SetOffScreenRendering(True)
     rw.SetSize(width, height)
     _RENDER_WINDOW = rw
     return rw
+
+
+def cleanup() -> None:
+    """Explicitly release the render window and GPU memory."""
+    global _RENDER_WINDOW, _RENDER_COUNT  # noqa: PLW0603
+
+    if _RENDER_WINDOW is not None:
+        _RENDER_WINDOW.Finalize()
+        logger.info("render window: released after %d renders", _RENDER_COUNT)
+    _RENDER_WINDOW = None
+    _RENDER_COUNT = 0
 
 
 # ---------------------------------------------------------------------------
@@ -378,7 +403,24 @@ def _resolve_array(
         cd = data.GetCellData()
         if cd and cd.GetArray(requested_name) is not None:
             return requested_name, "cell"
-        # Not found, return None
+        # Not found — log available fields with "did you mean?" suggestion
+        import difflib
+
+        available: list[str] = []
+        if pd:
+            for i in range(pd.GetNumberOfArrays()):
+                name = pd.GetArrayName(i)
+                if name:
+                    available.append(name)
+        if cd:
+            for i in range(cd.GetNumberOfArrays()):
+                name = cd.GetArrayName(i)
+                if name:
+                    available.append(name)
+        if available:
+            close = difflib.get_close_matches(requested_name, available, n=3)
+            hint = f" Did you mean: {', '.join(close)}?" if close else ""
+            logger.warning("Field '%s' not found. Available: %s.%s", requested_name, available, hint)
         return None, "point"
 
     # Auto-detect: first point array, then first cell array

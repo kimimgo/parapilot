@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -171,12 +172,96 @@ class TestDataReaderInit:
         reader = DataReader(vtk_file)
         assert reader.path == vtk_file.resolve()
 
-    def test_unsupported_extension(self, tmp_path):
+    def test_unsupported_extension_no_meshio(self, tmp_path):
         from parapilot.engine.readers import DataReader
+        from parapilot.errors import FileFormatError
 
         xyz_file = tmp_path / "file.xyz"
         xyz_file.write_text("data")
 
         reader = DataReader(xyz_file)
-        with pytest.raises(ValueError, match="Unsupported file format"):
-            reader.read()
+        with patch.dict("sys.modules", {"meshio": None}):
+            with pytest.raises(FileFormatError, match="Unsupported file format"):
+                reader.read()
+
+    def test_unsupported_extension_hint_message(self, tmp_path):
+        from parapilot.engine.readers import DataReader
+        from parapilot.errors import FileFormatError
+
+        xyz_file = tmp_path / "file.xyz"
+        xyz_file.write_text("data")
+
+        reader = DataReader(xyz_file)
+        with patch.dict("sys.modules", {"meshio": None}):
+            with pytest.raises(FileFormatError, match="pip install mcp-server-parapilot"):
+                reader.read()
+
+
+# ---------------------------------------------------------------------------
+# meshio fallback
+# ---------------------------------------------------------------------------
+
+
+class TestMeshioFallback:
+    vtk = pytest.importorskip("vtk")
+
+    def test_meshio_to_vtk_conversion(self):
+        """Test the _meshio_to_vtk helper with a mock meshio.Mesh."""
+        import numpy as np
+
+        from parapilot.engine.readers import _meshio_to_vtk
+
+        mesh = MagicMock()
+        mesh.points = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+        cell_block = MagicMock()
+        cell_block.type = "tetra"
+        cell_block.data = np.array([[0, 1, 2, 3]])
+        mesh.cells = [cell_block]
+        mesh.point_data = {"pressure": np.array([1.0, 2.0, 3.0, 4.0])}
+
+        grid = _meshio_to_vtk(mesh)
+        assert grid.GetNumberOfPoints() == 4
+        assert grid.GetNumberOfCells() == 1
+        assert grid.GetPointData().GetArray("pressure") is not None
+
+    def test_meshio_to_vtk_2d_mesh(self):
+        """Test 2D mesh is padded to 3D."""
+        import numpy as np
+
+        from parapilot.engine.readers import _meshio_to_vtk
+
+        mesh = MagicMock()
+        mesh.points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
+        cell_block = MagicMock()
+        cell_block.type = "triangle"
+        cell_block.data = np.array([[0, 1, 2]])
+        mesh.cells = [cell_block]
+        mesh.point_data = {}
+
+        grid = _meshio_to_vtk(mesh)
+        assert grid.GetNumberOfPoints() == 3
+
+    def test_meshio_to_vtk_skips_unknown_cell_types(self):
+        """Test that unknown cell types are skipped gracefully."""
+        import numpy as np
+
+        from parapilot.engine.readers import _meshio_to_vtk
+
+        mesh = MagicMock()
+        mesh.points = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
+        cell_block = MagicMock()
+        cell_block.type = "unknown_cell_type_xyz"
+        cell_block.data = np.array([[0, 1]])
+        mesh.cells = [cell_block]
+        mesh.point_data = {}
+
+        grid = _meshio_to_vtk(mesh)
+        assert grid.GetNumberOfPoints() == 2
+        assert grid.GetNumberOfCells() == 0
+
+    def test_meshio_cell_type_map(self):
+        """Test that common cell types are mapped."""
+        from parapilot.engine.readers import _MESHIO_TO_VTK_TYPE
+
+        expected = {"vertex", "line", "triangle", "quad", "tetra", "hexahedron", "wedge", "pyramid"}
+        assert expected.issubset(set(_MESHIO_TO_VTK_TYPE.keys()))

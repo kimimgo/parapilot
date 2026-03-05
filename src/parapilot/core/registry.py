@@ -156,6 +156,39 @@ FILTER_REGISTRY: dict[str, dict[str, Any]] = {
         "vtk_class": "vtkTriangleFilter",
         "params": {},
     },
+    # --- Smoothing / Cleaning ---
+    "SmoothMesh": {
+        "vtk_class": "vtkSmoothPolyDataFilter",
+        "params": {
+            "iterations": {"type": "int", "default": 20},
+            "relaxation_factor": {"type": "float", "default": 0.1},
+        },
+    },
+    "ProbePoint": {
+        "vtk_class": "vtkProbeFilter",
+        "params": {
+            "point": {"type": "list[float]", "length": 3, "required": True},
+        },
+    },
+    "CleanPolyData": {
+        "vtk_class": "vtkCleanPolyData",
+        "params": {
+            "tolerance": {"type": "float", "default": 0.0},
+        },
+    },
+    "Shrink": {
+        "vtk_class": "vtkShrinkFilter",
+        "params": {
+            "shrink_factor": {"type": "float", "default": 0.5},
+        },
+    },
+    "Tube": {
+        "vtk_class": "vtkTubeFilter",
+        "params": {
+            "radius": {"type": "float", "default": 0.01},
+            "sides": {"type": "int", "default": 6},
+        },
+    },
     # --- Programmable ---
     "ProgrammableFilter": {
         "vtk_class": "vtkProgrammableFilter",

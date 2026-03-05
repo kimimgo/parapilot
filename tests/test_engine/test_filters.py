@@ -10,7 +10,12 @@ from parapilot.engine.filters import (
     _FILTER_REGISTRY,
     apply_filter,
     apply_filters,
+    clean_polydata,
     list_filters,
+    probe_point,
+    shrink,
+    smooth_mesh,
+    tube,
 )
 
 # ---------------------------------------------------------------------------
@@ -39,7 +44,7 @@ class TestFilterRegistry:
             assert callable(func), f"{name} is not callable"
 
     def test_registry_count(self):
-        assert len(_FILTER_REGISTRY) >= 18
+        assert len(_FILTER_REGISTRY) >= 25
 
 
 # ---------------------------------------------------------------------------
@@ -89,3 +94,106 @@ class TestApplyFilters:
         mock_f1.assert_called_once_with(data_in, key1="val1")
         mock_f2.assert_called_once_with(data_mid, key2="val2")
         assert result is data_out
+
+
+# ---------------------------------------------------------------------------
+# New filter functions (real VTK)
+# ---------------------------------------------------------------------------
+
+vtk = pytest.importorskip("vtk")
+
+
+def _make_sphere() -> vtk.vtkPolyData:
+    """Create a simple sphere polydata for testing."""
+    src = vtk.vtkSphereSource()
+    src.SetThetaResolution(16)
+    src.SetPhiResolution(16)
+    src.Update()
+    return src.GetOutput()
+
+
+def _make_line() -> vtk.vtkPolyData:
+    """Create a simple line polydata for testing."""
+    line = vtk.vtkLineSource()
+    line.SetPoint1(0, 0, 0)
+    line.SetPoint2(1, 0, 0)
+    line.SetResolution(10)
+    line.Update()
+    return line.GetOutput()
+
+
+def _make_wavelet() -> vtk.vtkImageData:
+    """Create a wavelet image data for testing."""
+    src = vtk.vtkRTAnalyticSource()
+    src.Update()
+    return src.GetOutput()
+
+
+class TestSmoothMesh:
+    def test_smooths_polydata(self):
+        sphere = _make_sphere()
+        result = smooth_mesh(sphere, iterations=10, relaxation_factor=0.2)
+        assert isinstance(result, vtk.vtkPolyData)
+        assert result.GetNumberOfPoints() > 0
+
+    def test_converts_non_polydata(self):
+        wavelet = _make_wavelet()
+        result = smooth_mesh(wavelet)
+        assert isinstance(result, vtk.vtkPolyData)
+        assert result.GetNumberOfPoints() > 0
+
+    def test_registry_aliases(self):
+        assert "smooth_mesh" in _FILTER_REGISTRY
+        assert "smooth" in _FILTER_REGISTRY
+
+
+class TestProbePoint:
+    def test_probes_at_point(self):
+        wavelet = _make_wavelet()
+        result = probe_point(wavelet, point=(0.0, 0.0, 0.0))
+        assert isinstance(result, vtk.vtkPolyData)
+        assert result.GetNumberOfPoints() == 1
+
+    def test_registry_aliases(self):
+        assert "probe_point" in _FILTER_REGISTRY
+        assert "probe" in _FILTER_REGISTRY
+
+
+class TestCleanPolydata:
+    def test_cleans_polydata(self):
+        sphere = _make_sphere()
+        original_points = sphere.GetNumberOfPoints()
+        result = clean_polydata(sphere)
+        assert isinstance(result, vtk.vtkPolyData)
+        assert result.GetNumberOfPoints() <= original_points
+
+    def test_with_tolerance(self):
+        sphere = _make_sphere()
+        result = clean_polydata(sphere, tolerance=0.1)
+        assert isinstance(result, vtk.vtkPolyData)
+        assert result.GetNumberOfPoints() > 0
+
+    def test_registry_aliases(self):
+        assert "clean_polydata" in _FILTER_REGISTRY
+        assert "clean" in _FILTER_REGISTRY
+
+
+class TestShrink:
+    def test_shrinks_cells(self):
+        wavelet = _make_wavelet()
+        result = shrink(wavelet, shrink_factor=0.5)
+        assert result.GetNumberOfCells() > 0
+
+    def test_registry_entry(self):
+        assert "shrink" in _FILTER_REGISTRY
+
+
+class TestTube:
+    def test_adds_tube_to_lines(self):
+        line = _make_line()
+        result = tube(line, radius=0.05, sides=12)
+        assert isinstance(result, vtk.vtkPolyData)
+        assert result.GetNumberOfPoints() > line.GetNumberOfPoints()
+
+    def test_registry_entry(self):
+        assert "tube" in _FILTER_REGISTRY

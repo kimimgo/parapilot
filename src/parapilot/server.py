@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any, Literal
 
@@ -10,6 +11,9 @@ from fastmcp.utilities.types import Image
 
 from parapilot.config import PVConfig
 from parapilot.core.runner import VTKRunner
+from parapilot.logging import get_logger
+
+logger = get_logger("server")
 
 mcp = FastMCP(
     "parapilot",
@@ -44,6 +48,8 @@ def _validate_file_path(file_path: str) -> str:
     When PARAPILOT_DATA_DIR is not set (local install), any path is allowed.
     When set (Docker), access is restricted to that directory.
     """
+    import difflib
+
     resolved = Path(file_path).resolve()
     if _config.data_dir is not None:
         data_dir = _config.data_dir.resolve()
@@ -51,6 +57,15 @@ def _validate_file_path(file_path: str) -> str:
             raise ValueError(
                 f"Access denied: '{file_path}' is outside allowed data directory '{data_dir}'"
             )
+    if not resolved.exists():
+        hint = ""
+        parent = resolved.parent
+        if parent.is_dir():
+            siblings = [f.name for f in parent.iterdir() if f.is_file()]
+            close = difflib.get_close_matches(resolved.name, siblings, n=3)
+            if close:
+                hint = f" Did you mean: {', '.join(close)}?"
+        logger.warning("File not found: '%s'.%s", file_path, hint)
     return str(resolved)
 
 
@@ -70,9 +85,13 @@ async def inspect_data(file_path: str) -> dict[str, Any]:
         file_path: Path to the simulation file (e.g., /data/cavity.foam, /data/beam.vtu)
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.inspect_data: start file=%s", file_path)
+    t0 = time.monotonic()
     from parapilot.tools.inspect import inspect_data_impl
 
-    return await inspect_data_impl(file_path, _runner)
+    result = await inspect_data_impl(file_path, _runner)
+    logger.debug("tool.inspect_data: done in %.2fs", time.monotonic() - t0)
+    return result
 
 
 @mcp.tool()
@@ -105,6 +124,8 @@ async def render(
         output_filename: Output PNG filename (e.g., "snapshot_press.png")
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.render: start file=%s field=%s", file_path, field_name)
+    t0 = time.monotonic()
     from parapilot.tools.render import render_impl
 
     result = await render_impl(
@@ -114,6 +135,7 @@ async def render(
         timestep=timestep, blocks=blocks,
         output_filename=output_filename,
     )
+    logger.debug("tool.render: done in %.2fs", time.monotonic() - t0)
     if result.image_bytes:
         return Image(data=result.image_bytes, format="png")
     raise RuntimeError("Rendering failed: no image produced")
@@ -145,6 +167,8 @@ async def slice(
         timestep: Timestep selection
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.slice: start file=%s field=%s", file_path, field_name)
+    t0 = time.monotonic()
     from parapilot.tools.filters import slice_impl
 
     result = await slice_impl(
@@ -152,6 +176,7 @@ async def slice(
         origin=origin, normal=normal, colormap=colormap,
         camera=camera, width=width, height=height, timestep=timestep,
     )
+    logger.debug("tool.slice: done in %.2fs", time.monotonic() - t0)
     if result.image_bytes:
         return Image(data=result.image_bytes, format="png")
     raise RuntimeError("Slice rendering failed: no image produced")
@@ -181,6 +206,8 @@ async def contour(
         timestep: Timestep selection
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.contour: start file=%s field=%s isovalues=%s", file_path, field_name, isovalues)
+    t0 = time.monotonic()
     from parapilot.tools.filters import contour_impl
 
     result = await contour_impl(
@@ -188,6 +215,7 @@ async def contour(
         colormap=colormap, camera=camera, width=width, height=height,
         timestep=timestep,
     )
+    logger.debug("tool.contour: done in %.2fs", time.monotonic() - t0)
     if result.image_bytes:
         return Image(data=result.image_bytes, format="png")
     raise RuntimeError("Contour rendering failed: no image produced")
@@ -221,6 +249,8 @@ async def clip(
         timestep: Timestep selection
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.clip: start file=%s field=%s", file_path, field_name)
+    t0 = time.monotonic()
     from parapilot.tools.filters import clip_impl
 
     result = await clip_impl(
@@ -229,6 +259,7 @@ async def clip(
         colormap=colormap, camera=camera, width=width, height=height,
         timestep=timestep,
     )
+    logger.debug("tool.clip: done in %.2fs", time.monotonic() - t0)
     if result.image_bytes:
         return Image(data=result.image_bytes, format="png")
     raise RuntimeError("Clip rendering failed: no image produced")
@@ -264,6 +295,8 @@ async def streamlines(
         timestep: Timestep selection
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.streamlines: start file=%s vector_field=%s", file_path, vector_field)
+    t0 = time.monotonic()
     from parapilot.tools.filters import streamlines_impl
 
     result = await streamlines_impl(
@@ -273,6 +306,7 @@ async def streamlines(
         colormap=colormap, camera=camera, width=width, height=height,
         timestep=timestep,
     )
+    logger.debug("tool.streamlines: done in %.2fs", time.monotonic() - t0)
     if result.image_bytes:
         return Image(data=result.image_bytes, format="png")
     raise RuntimeError("Streamline rendering failed: no image produced")
@@ -300,12 +334,16 @@ async def plot_over_line(
         timestep: Timestep selection
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.plot_over_line: start file=%s field=%s", file_path, field_name)
+    t0 = time.monotonic()
     from parapilot.tools.extract import plot_over_line_impl
 
-    return await plot_over_line_impl(
+    result = await plot_over_line_impl(
         file_path, field_name, point1, point2, _runner,
         resolution=resolution, timestep=timestep,
     )
+    logger.debug("tool.plot_over_line: done in %.2fs", time.monotonic() - t0)
+    return result
 
 
 @mcp.tool()
@@ -324,12 +362,16 @@ async def extract_stats(
         blocks: Multiblock region names
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.extract_stats: start file=%s fields=%s", file_path, fields)
+    t0 = time.monotonic()
     from parapilot.tools.extract import extract_stats_impl
 
-    return await extract_stats_impl(
+    result = await extract_stats_impl(
         file_path, fields, _runner,
         timestep=timestep, blocks=blocks,
     )
+    logger.debug("tool.extract_stats: done in %.2fs", time.monotonic() - t0)
+    return result
 
 
 @mcp.tool()
@@ -348,12 +390,16 @@ async def integrate_surface(
         timestep: Timestep selection
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.integrate_surface: start file=%s field=%s boundary=%s", file_path, field_name, boundary)
+    t0 = time.monotonic()
     from parapilot.tools.extract import integrate_surface_impl
 
-    return await integrate_surface_impl(
+    result = await integrate_surface_impl(
         file_path, field_name, _runner,
         boundary=boundary, timestep=timestep,
     )
+    logger.debug("tool.integrate_surface: done in %.2fs", time.monotonic() - t0)
+    return result
 
 
 @mcp.tool()
@@ -406,6 +452,8 @@ async def animate(
     file_path = _validate_file_path(file_path)
     if files:
         files = [_validate_file_path(f) for f in files]
+    logger.debug("tool.animate: start file=%s field=%s mode=%s", file_path, field_name, mode)
+    t0 = time.monotonic()
     from parapilot.tools.animate import animate_impl
 
     result = await animate_impl(
@@ -417,6 +465,7 @@ async def animate(
         output_format=output_format, video_quality=video_quality,
         text_overlay=text_overlay,
     )
+    logger.debug("tool.animate: done in %.2fs", time.monotonic() - t0)
     return result.json_data or {"error": "Animation failed"}
 
 
@@ -463,6 +512,8 @@ async def split_animate(
         gif: Generate animated GIF (True) or PNG sequence only (False)
     """
     file_path = _validate_file_path(file_path)
+    logger.debug("tool.split_animate: start file=%s panes=%d", file_path, len(panes))
+    t0 = time.monotonic()
     from parapilot.tools.split_animate import split_animate_impl
 
     result = await split_animate_impl(
@@ -470,6 +521,7 @@ async def split_animate(
         layout=layout, fps=fps, time_range=time_range,
         speed_factor=speed_factor, resolution=resolution, gif=gif,
     )
+    logger.debug("tool.split_animate: done in %.2fs", time.monotonic() - t0)
     if gif and result.image_bytes:
         return Image(data=result.image_bytes, format="gif")
     return result.json_data or {"error": "Split animation failed"}
@@ -496,13 +548,17 @@ async def pv_isosurface(
         only_type: Particle type filter (e.g., "+fluid")
         docker_image: Docker image with IsoSurface tool
     """
+    logger.debug("tool.pv_isosurface: start bi4_dir=%s", bi4_dir)
+    t0 = time.monotonic()
     from parapilot.tools.isosurface import pv_isosurface_impl
 
-    return await pv_isosurface_impl(
+    result = await pv_isosurface_impl(
         bi4_dir, output_dir,
         vars=vars, only_type=only_type,
         docker_image=docker_image,
     )
+    logger.debug("tool.pv_isosurface: done in %.2fs", time.monotonic() - t0)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -544,9 +600,12 @@ async def execute_pipeline(
     """
     if "source" in pipeline and "file" in pipeline["source"]:
         pipeline["source"]["file"] = _validate_file_path(pipeline["source"]["file"])
+    logger.debug("tool.execute_pipeline: start")
+    t0 = time.monotonic()
     from parapilot.tools.pipeline import execute_pipeline_impl
 
     result = await execute_pipeline_impl(pipeline, _runner)
+    logger.debug("tool.execute_pipeline: done in %.2fs type=%s", time.monotonic() - t0, result.output_type)
 
     if result.output_type == "image" and result.image_bytes:
         return Image(data=result.image_bytes, format="png")
@@ -615,7 +674,6 @@ def _protect_stdout() -> None:
 def main() -> None:
     """Run the MCP server."""
     import asyncio
-    import sys
 
     from parapilot.core.runner import VTKRunner
 
@@ -630,7 +688,7 @@ def main() -> None:
         )
         loop.close()
         if removed:
-            print(f"parapilot: cleaned up {removed} orphaned container(s)", file=sys.stderr)
+            logger.info("cleaned up %d orphaned container(s)", removed)
     except RuntimeError:
         # No event loop available yet — skip cleanup
         pass

@@ -13,6 +13,7 @@ __all__ = [
     "extract_stats",
     "extract_data",
     "export_file",
+    "export_gltf",
     "get_leaf_block",
 ]
 
@@ -487,6 +488,66 @@ def _get_coordinates(ds: vtk.vtkDataSet) -> Any:
         return None
 
     return vtk_to_numpy(points.GetData())
+
+
+def export_gltf(
+    dataset: vtk.vtkDataObject,
+    output_path: str | Path,
+    binary: bool = True,
+) -> dict[str, Any]:
+    """Export VTK data to glTF/glB format for 3D web viewers.
+
+    Requires VTK 9.4+ with vtkGLTFExporter support.
+
+    Args:
+        dataset: VTK dataset to export.
+        output_path: Destination file path (.gltf or .glb).
+        binary: If True, inline data for binary glTF (.glb).
+
+    Returns:
+        Dict with "path", "format", "size_bytes".
+    """
+    import vtk
+
+    path = Path(output_path).resolve()
+
+    if not hasattr(vtk, "vtkGLTFExporter"):
+        msg = "vtkGLTFExporter not available. Requires VTK >= 9.4"
+        raise RuntimeError(msg)
+
+    from .renderer import _get_render_window
+
+    # Create minimal offscreen scene
+    rw = _get_render_window(800, 600)
+    rw.GetRenderers().RemoveAllItems()
+    renderer = vtk.vtkRenderer()
+    rw.AddRenderer(renderer)
+
+    mapper = vtk.vtkDataSetMapper()
+    mapper.SetInputData(dataset)
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    renderer.AddActor(actor)
+    renderer.ResetCamera()
+    rw.Render()
+
+    exporter = vtk.vtkGLTFExporter()
+    exporter.SetRenderWindow(rw)
+    exporter.SetFileName(str(path))
+    if binary:
+        exporter.InlineDataOn()
+    exporter.Write()
+
+    # Clean up
+    renderer.RemoveAllViewProps()
+    rw.GetRenderers().RemoveAllItems()
+
+    size = path.stat().st_size if path.exists() else 0
+    return {
+        "path": str(path),
+        "format": path.suffix,
+        "size_bytes": size,
+    }
 
 
 def supported_export_formats() -> list[str]:

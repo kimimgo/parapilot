@@ -12,8 +12,11 @@ from pathlib import Path
 from typing import Any
 
 from parapilot.config import PVConfig
+from parapilot.logging import get_logger
 
 __all__ = ["RunResult", "VTKRunner"]
+
+logger = get_logger("runner")
 
 
 @dataclass
@@ -79,6 +82,7 @@ class VTKRunner:
                 in Docker mode (each mounted at same path inside container).
         """
         timeout = timeout or self.config.default_timeout
+        logger.debug("execute: mode=%s script=%d bytes", self.mode, len(script))
 
         with tempfile.TemporaryDirectory(prefix="parapilot_", ignore_cleanup_errors=True) as tmpdir:
             tmp = Path(tmpdir)
@@ -109,6 +113,11 @@ class VTKRunner:
                     result.output_file_data[f.name] = f.read_bytes()
                 except (PermissionError, OSError):
                     pass
+
+            logger.debug(
+                "execute: exit_code=%d stdout=%d stderr=%d files=%d",
+                result.exit_code, len(result.stdout), len(result.stderr), len(result.output_files),
+            )
 
             # Try to parse JSON from a result file or stdout
             json_file = output_dir / "result.json"
@@ -161,6 +170,7 @@ class VTKRunner:
         except asyncio.TimeoutError:
             proc.kill()
             await proc.communicate()
+            logger.warning("local script timed out after %.0fs", timeout)
             return RunResult(stdout="", stderr=f"VTK script timed out after {timeout}s", exit_code=-1)
 
         return RunResult(
@@ -231,6 +241,7 @@ class VTKRunner:
             await proc.communicate()
             # Kill the actual Docker container (proc.kill only kills the CLI)
             await self._stop_container(container_name)
+            logger.warning("docker script timed out after %.0fs container=%s", timeout, container_name)
             return RunResult(
                 stdout="", stderr=f"Docker VTK script timed out after {timeout}s", exit_code=-1
             )

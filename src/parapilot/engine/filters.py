@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from parapilot.errors import EmptyOutputError
+
 if TYPE_CHECKING:
     import vtk
 
@@ -30,6 +32,11 @@ __all__ = [
     "decimate",
     "triangulate",
     "isosurface",
+    "smooth_mesh",
+    "probe_point",
+    "clean_polydata",
+    "shrink",
+    "tube",
 ]
 
 
@@ -188,7 +195,7 @@ def contour(
             f"Array '{name}' range is [{data_range[0]:.6g}, {data_range[1]:.6g}]. "
             f"Choose isovalues within this range."
         )
-        raise ValueError(msg)
+        raise EmptyOutputError(msg)
 
     return output
 
@@ -736,6 +743,142 @@ def triangulate(data: vtk.vtkDataObject) -> vtk.vtkDataObject:
     return filt.GetOutput()
 
 
+def smooth_mesh(
+    data: vtk.vtkDataObject,
+    iterations: int = 20,
+    relaxation_factor: float = 0.1,
+) -> vtk.vtkDataObject:
+    """Smooth mesh using Laplacian smoothing.
+
+    Args:
+        data: Input VTK dataset.
+        iterations: Number of smoothing iterations.
+        relaxation_factor: Relaxation factor per iteration.
+
+    Returns:
+        Smoothed polydata.
+    """
+    import vtk
+
+    # Convert to polydata if needed
+    if not isinstance(data, vtk.vtkPolyData):
+        surf = vtk.vtkDataSetSurfaceFilter()
+        surf.SetInputData(data)
+        surf.Update()
+        data = surf.GetOutput()
+
+    filt = vtk.vtkSmoothPolyDataFilter()
+    filt.SetInputData(data)
+    filt.SetNumberOfIterations(iterations)
+    filt.SetRelaxationFactor(relaxation_factor)
+    filt.Update()
+    return filt.GetOutput()
+
+
+def probe_point(
+    data: vtk.vtkDataObject,
+    point: tuple[float, float, float],
+) -> vtk.vtkDataObject:
+    """Probe dataset at a single point.
+
+    Args:
+        data: Input VTK dataset.
+        point: Sample location (x, y, z).
+
+    Returns:
+        Single-point polydata with interpolated field values.
+    """
+    import vtk
+
+    pts = vtk.vtkPoints()
+    pts.InsertNextPoint(*point)
+    pd = vtk.vtkPolyData()
+    pd.SetPoints(pts)
+
+    probe = vtk.vtkProbeFilter()
+    probe.SetInputData(pd)
+    probe.SetSourceData(data)
+    probe.Update()
+    return probe.GetOutput()
+
+
+def clean_polydata(
+    data: vtk.vtkDataObject,
+    tolerance: float = 0.0,
+) -> vtk.vtkDataObject:
+    """Remove duplicate points and degenerate cells.
+
+    Args:
+        data: Input VTK dataset.
+        tolerance: Merge tolerance. 0 = exact duplicates only.
+
+    Returns:
+        Cleaned polydata.
+    """
+    import vtk
+
+    # Convert to polydata if needed
+    if not isinstance(data, vtk.vtkPolyData):
+        surf = vtk.vtkDataSetSurfaceFilter()
+        surf.SetInputData(data)
+        surf.Update()
+        data = surf.GetOutput()
+
+    filt = vtk.vtkCleanPolyData()
+    filt.SetInputData(data)
+    if tolerance > 0:
+        filt.SetTolerance(tolerance)
+    filt.Update()
+    return filt.GetOutput()
+
+
+def shrink(
+    data: vtk.vtkDataObject,
+    shrink_factor: float = 0.5,
+) -> vtk.vtkDataObject:
+    """Shrink cells for exploded view visualization.
+
+    Args:
+        data: Input VTK dataset.
+        shrink_factor: Factor between 0 (full shrink) and 1 (no shrink).
+
+    Returns:
+        Dataset with shrunk cells.
+    """
+    import vtk
+
+    filt = vtk.vtkShrinkFilter()
+    filt.SetInputData(data)
+    filt.SetShrinkFactor(shrink_factor)
+    filt.Update()
+    return filt.GetOutput()
+
+
+def tube(
+    data: vtk.vtkDataObject,
+    radius: float = 0.01,
+    sides: int = 6,
+) -> vtk.vtkDataObject:
+    """Add tube thickness to polylines (e.g., streamlines).
+
+    Args:
+        data: Input polydata with lines.
+        radius: Tube radius.
+        sides: Number of sides for tube cross-section.
+
+    Returns:
+        Polydata with tube geometry.
+    """
+    import vtk
+
+    filt = vtk.vtkTubeFilter()
+    filt.SetInputData(data)
+    filt.SetRadius(radius)
+    filt.SetNumberOfSides(sides)
+    filt.Update()
+    return filt.GetOutput()
+
+
 # ---------------------------------------------------------------------------
 # Pipeline composition
 # ---------------------------------------------------------------------------
@@ -771,6 +914,15 @@ _FILTER_REGISTRY: dict[str, object] = {
     "glyph": glyph,
     "decimate": decimate,
     "triangulate": triangulate,
+    "smooth_mesh": smooth_mesh,
+    "smooth": smooth_mesh,
+    "probe_point": probe_point,
+    "probe": probe_point,
+    "clean_polydata": clean_polydata,
+    "clean_poly_data": clean_polydata,
+    "clean": clean_polydata,
+    "shrink": shrink,
+    "tube": tube,
 }
 
 

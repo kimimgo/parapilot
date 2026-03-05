@@ -6,10 +6,15 @@ import json
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+from parapilot.errors import FileFormatError
+from parapilot.logging import get_logger
 
 if TYPE_CHECKING:
     import vtk
+
+logger = get_logger("readers")
 
 __all__ = [
     "DataReader",
@@ -118,6 +123,8 @@ class DataReader:
         self._pvd_entries: list[_PvdEntry] = []
         self._series_entries: list[_SeriesEntry] = []
 
+        logger.debug("DataReader: opening %s (format=%s)", self._path, self._path.suffix.lower())
+
         if not self._path.exists():
             msg = f"File not found: {self._path}"
             raise FileNotFoundError(msg)
@@ -180,11 +187,12 @@ class DataReader:
 
         entry = _READER_MAP.get(suffix)
         if entry is None:
-            available = ", ".join(sorted(_READER_MAP.keys()))
-            msg = f"Unsupported file format '{suffix}'. Supported: {available}"
-            raise ValueError(msg)
+            # Try meshio fallback for additional format support
+            self._try_meshio_fallback(suffix)
+            return
 
         class_name, _is_xml = entry
+        logger.debug("DataReader: using %s for %s", class_name, suffix)
         reader_class = getattr(vtk, class_name, None)
         if reader_class is None:
             msg = f"VTK class '{class_name}' not available. Check your VTK build."
@@ -208,6 +216,40 @@ class DataReader:
         self._is_multiblock = isinstance(
             reader.GetOutput(), vtk.vtkMultiBlockDataSet
         )
+
+    def _try_meshio_fallback(self, suffix: str) -> None:
+        """Attempt to read the file via meshio and convert to VTK."""
+        import vtk
+
+        try:
+            import meshio
+        except ImportError:
+            available = ", ".join(sorted(_READER_MAP.keys()))
+            msg = (
+                f"Unsupported file format '{suffix}'. Supported: {available}. "
+                f"For more formats: pip install mcp-server-parapilot[mesh]"
+            )
+            raise FileFormatError(msg)
+
+        try:
+            mesh = meshio.read(str(self._path))
+        except Exception as exc:
+            available = ", ".join(sorted(_READER_MAP.keys()))
+            msg = (
+                f"Unsupported file format '{suffix}'. Native VTK: {available}. "
+                f"meshio also failed: {exc}"
+            )
+            raise FileFormatError(msg) from exc
+        vtk_data = _meshio_to_vtk(mesh)
+
+        # Wrap converted data in vtkTrivialProducer for pipeline compatibility
+        producer = vtk.vtkTrivialProducer()
+        producer.SetOutput(vtk_data)
+        producer.Update()
+
+        self._reader = producer
+        self._timesteps = []
+        self._is_multiblock = False
 
     def _setup_openfoam(self, reader: vtk.vtkOpenFOAMReader) -> None:
         """Configure OpenFOAM reader with all patches and cell arrays enabled."""
@@ -502,6 +544,83 @@ def _first_leaf(mb: vtk.vtkMultiBlockDataSet) -> vtk.vtkDataSet | None:
         elif isinstance(block, vtk.vtkDataSet):
             return block
     return None
+
+
+# ---------------------------------------------------------------------------
+# meshio → VTK conversion
+# ---------------------------------------------------------------------------
+
+# meshio cell type → VTK cell type constant
+_MESHIO_TO_VTK_TYPE: dict[str, int] = {
+    "vertex": 1,
+    "line": 3,
+    "triangle": 5,
+    "quad": 9,
+    "tetra": 10,
+    "hexahedron": 12,
+    "wedge": 13,
+    "pyramid": 14,
+    "line3": 21,
+    "triangle6": 22,
+    "quad8": 23,
+    "tetra10": 24,
+    "hexahedron20": 25,
+}
+
+
+def _meshio_to_vtk(mesh: Any) -> vtk.vtkUnstructuredGrid:
+    """Convert a meshio.Mesh to vtkUnstructuredGrid.
+
+    Args:
+        mesh: A meshio.Mesh object with .points, .cells, .point_data attrs.
+
+    Returns:
+        VTK unstructured grid with points, cells, and point data.
+    """
+    import numpy as np
+    import vtk
+    from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray
+
+    # Create points
+    pts_np = np.ascontiguousarray(mesh.points, dtype=np.float64)
+    if pts_np.shape[1] == 2:
+        # 2D mesh — pad with zeros
+        pts_np = np.column_stack([pts_np, np.zeros(len(pts_np))])
+
+    vtk_points = vtk.vtkPoints()
+    vtk_points.SetData(numpy_to_vtk(pts_np))  # type: ignore[no-untyped-call]
+
+    grid = vtk.vtkUnstructuredGrid()
+    grid.SetPoints(vtk_points)
+
+    # Convert cells
+    for cell_block in mesh.cells:
+        cell_type_str = cell_block.type
+        vtk_type = _MESHIO_TO_VTK_TYPE.get(cell_type_str)
+        if vtk_type is None:
+            continue  # skip unsupported cell types
+
+        cell_data = np.ascontiguousarray(cell_block.data, dtype=np.int64)
+        n_cells, n_nodes = cell_data.shape
+
+        # Build VTK cell array: [n_nodes, id0, id1, ..., n_nodes, id0, id1, ...]
+        col = np.full((n_cells, 1), n_nodes, dtype=np.int64)
+        connectivity = np.hstack([col, cell_data]).ravel()
+
+        cells = vtk.vtkCellArray()
+        vtk_id_arr = numpy_to_vtkIdTypeArray(connectivity)  # type: ignore[no-untyped-call]
+        cells.SetCells(n_cells, vtk_id_arr)
+
+        grid.SetCells(vtk_type, cells)
+
+    # Point data
+    for name, arr in mesh.point_data.items():
+        np_arr = np.ascontiguousarray(arr)
+        vtk_arr = numpy_to_vtk(np_arr)  # type: ignore[no-untyped-call]
+        vtk_arr.SetName(name)
+        grid.GetPointData().AddArray(vtk_arr)
+
+    return grid
 
 
 # ---------------------------------------------------------------------------
