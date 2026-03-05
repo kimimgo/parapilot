@@ -144,6 +144,177 @@ class TestValidatePipeline:
             importlib.reload(eng)
 
 
+    def test_animation_without_animation_def(self):
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(type="animation"),
+        )
+        errors = validate_pipeline(pipeline)
+        assert any("animation" in e.lower() for e in errors)
+
+    def test_split_animation_without_def(self):
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(type="split_animation"),
+        )
+        errors = validate_pipeline(pipeline)
+        assert any("split_animation" in e for e in errors)
+
+    def test_split_animation_valid(self):
+        from parapilot.pipeline.models import (
+            GraphPaneDef,
+            GraphSeriesDef,
+            LayoutDef,
+            PaneDef,
+            RenderPaneDef,
+            SplitAnimationDef,
+        )
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(type="render", row=0, col=0,
+                                render_pane=RenderPaneDef(render=RenderDef(field="p"))),
+                        PaneDef(type="graph", row=0, col=1,
+                                graph_pane=GraphPaneDef(series=[
+                                    GraphSeriesDef(field="p", stat="mean"),
+                                ])),
+                    ],
+                    layout=LayoutDef(rows=1, cols=2),
+                ),
+            ),
+        )
+        errors = validate_pipeline(pipeline)
+        assert errors == []
+
+    def test_split_animation_row_out_of_range(self):
+        from parapilot.pipeline.models import (
+            LayoutDef,
+            PaneDef,
+            RenderPaneDef,
+            SplitAnimationDef,
+        )
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(type="render", row=5, col=0,
+                                render_pane=RenderPaneDef(render=RenderDef(field="p"))),
+                    ],
+                    layout=LayoutDef(rows=1, cols=2),
+                ),
+            ),
+        )
+        errors = validate_pipeline(pipeline)
+        assert any("row 5 out of range" in e for e in errors)
+
+    def test_split_animation_col_out_of_range(self):
+        from parapilot.pipeline.models import (
+            LayoutDef,
+            PaneDef,
+            RenderPaneDef,
+            SplitAnimationDef,
+        )
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(type="render", row=0, col=3,
+                                render_pane=RenderPaneDef(render=RenderDef(field="p"))),
+                    ],
+                    layout=LayoutDef(rows=1, cols=2),
+                ),
+            ),
+        )
+        errors = validate_pipeline(pipeline)
+        assert any("col 3 out of range" in e for e in errors)
+
+    def test_split_animation_render_without_render_pane(self):
+        from parapilot.pipeline.models import (
+            LayoutDef,
+            PaneDef,
+            SplitAnimationDef,
+        )
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(type="render", row=0, col=0),
+                    ],
+                    layout=LayoutDef(rows=1, cols=2),
+                ),
+            ),
+        )
+        errors = validate_pipeline(pipeline)
+        assert any("render_pane" in e for e in errors)
+
+    def test_split_animation_graph_without_graph_pane(self):
+        from parapilot.pipeline.models import (
+            LayoutDef,
+            PaneDef,
+            RenderPaneDef,
+            SplitAnimationDef,
+        )
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(type="render", row=0, col=0,
+                                render_pane=RenderPaneDef(render=RenderDef(field="p"))),
+                        PaneDef(type="graph", row=0, col=1),
+                    ],
+                    layout=LayoutDef(rows=1, cols=2),
+                ),
+            ),
+        )
+        errors = validate_pipeline(pipeline)
+        assert any("graph_pane" in e for e in errors)
+
+    def test_split_animation_no_render_pane_at_all(self):
+        from parapilot.pipeline.models import (
+            GraphPaneDef,
+            GraphSeriesDef,
+            LayoutDef,
+            PaneDef,
+            SplitAnimationDef,
+        )
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(type="graph", row=0, col=0,
+                                graph_pane=GraphPaneDef(series=[
+                                    GraphSeriesDef(field="p", stat="mean"),
+                                ])),
+                    ],
+                    layout=LayoutDef(rows=1, cols=2),
+                ),
+            ),
+        )
+        errors = validate_pipeline(pipeline)
+        assert any("at least one render pane" in e for e in errors)
+
+
 class TestCompileVideo:
     """Tests for compile_video function (P0-2)."""
 

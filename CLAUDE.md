@@ -134,7 +134,7 @@ server.py (MCP tool)
 | Tools | 15 |
 | Resources | 11 |
 | Prompts | 3 |
-| Tests | 548 |
+| Tests | 622 |
 
 ## Test Structure
 
