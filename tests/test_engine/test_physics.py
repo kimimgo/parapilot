@@ -387,3 +387,162 @@ class TestSmartDefaultsDataclass:
             scalar_range=None,
         )
         assert sd.techniques == []
+
+
+# ── VTK-based integration tests ─────────────────────────────────────
+
+vtk = pytest.importorskip("vtk")
+
+from parapilot.engine.physics import (  # noqa: E402
+    _auto_glyph_scale,
+    _auto_seed_line,
+    _auto_warp_scale,
+    _diagonal,
+    _is_2d_dataset,
+    recommend_techniques,
+    smart_defaults,
+    smart_representation,
+)
+
+
+def _make_3d_grid():
+    """Create a 3D test grid with pressure and velocity."""
+    grid = vtk.vtkUnstructuredGrid()
+    pts = vtk.vtkPoints()
+    pts.InsertNextPoint(0, 0, 0)
+    pts.InsertNextPoint(1, 0, 0)
+    pts.InsertNextPoint(0, 1, 0)
+    pts.InsertNextPoint(0, 0, 1)
+    grid.SetPoints(pts)
+
+    cell = vtk.vtkTetra()
+    for i in range(4):
+        cell.GetPointIds().SetId(i, i)
+    grid.InsertNextCell(cell.GetCellType(), cell.GetPointIds())
+
+    p = vtk.vtkFloatArray()
+    p.SetName("p")
+    p.SetNumberOfTuples(4)
+    for i in range(4):
+        p.SetValue(i, float(i) * 100.0 - 150.0)
+    grid.GetPointData().AddArray(p)
+
+    u = vtk.vtkFloatArray()
+    u.SetName("U")
+    u.SetNumberOfComponents(3)
+    u.SetNumberOfTuples(4)
+    for i in range(4):
+        u.SetTuple3(i, float(i), 0.0, 0.0)
+    grid.GetPointData().AddArray(u)
+
+    alpha = vtk.vtkFloatArray()
+    alpha.SetName("alpha.water")
+    alpha.SetNumberOfTuples(4)
+    for i in range(4):
+        alpha.SetValue(i, float(i) / 3.0)
+    grid.GetPointData().AddArray(alpha)
+
+    return grid
+
+
+class TestSmartRepresentationVTK:
+    def test_small_mesh_shows_edges(self):
+        grid = _make_3d_grid()
+        rep = smart_representation(grid)
+        assert rep.edge_visibility is True
+
+    def test_point_only_data(self):
+        grid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        for i in range(100):
+            pts.InsertNextPoint(float(i), 0, 0)
+        grid.SetPoints(pts)
+        rep = smart_representation(grid)
+        assert rep.primary == "points"
+
+    def test_empty_dataset(self):
+        grid = vtk.vtkUnstructuredGrid()
+        rep = smart_representation(grid)
+        assert rep.primary == "surface"
+
+    def test_physics_warp_override(self):
+        grid = _make_3d_grid()
+        physics = detect_physics("displacement", num_components=3)
+        rep = smart_representation(grid, physics)
+        assert rep.edge_visibility is True
+
+
+class TestRecommendTechniquesVTK:
+    def test_velocity_gets_streamlines(self):
+        grid = _make_3d_grid()
+        techniques = recommend_techniques(grid, "U")
+        names = [t.technique for t in techniques]
+        assert "streamlines" in names
+
+    def test_vof_gets_isosurface(self):
+        grid = _make_3d_grid()
+        techniques = recommend_techniques(grid, "alpha.water")
+        names = [t.technique for t in techniques]
+        assert "isosurface" in names
+
+    def test_sorted_by_priority(self):
+        grid = _make_3d_grid()
+        techniques = recommend_techniques(grid, "U")
+        priorities = [t.priority for t in techniques]
+        assert priorities == sorted(priorities)
+
+    def test_empty_dataset(self):
+        grid = vtk.vtkUnstructuredGrid()
+        techniques = recommend_techniques(grid, "p")
+        assert techniques == []
+
+
+class TestSmartDefaultsVTK:
+    def test_full_defaults(self):
+        grid = _make_3d_grid()
+        sd = smart_defaults(grid, "p")
+        assert isinstance(sd, SmartDefaults)
+        assert sd.physics.name == "pressure"
+        assert sd.colormap == "coolwarm"
+        assert sd.scalar_range is not None
+
+    def test_auto_field_detection(self):
+        grid = _make_3d_grid()
+        sd = smart_defaults(grid)
+        assert sd.physics is not None
+
+    def test_empty_dataset(self):
+        grid = vtk.vtkUnstructuredGrid()
+        sd = smart_defaults(grid)
+        assert sd.physics.name == "unknown_scalar"
+
+
+class TestInternalHelpersVTK:
+    def test_diagonal(self):
+        d = _diagonal((0, 3, 0, 4, 0, 0))
+        assert d == pytest.approx(5.0)
+
+    def test_is_2d_flat_z(self):
+        assert _is_2d_dataset((0, 10, 0, 10, 0, 0)) is True
+
+    def test_is_2d_3d_cube(self):
+        assert _is_2d_dataset((0, 1, 0, 1, 0, 1)) is False
+
+    def test_auto_glyph_scale(self):
+        grid = _make_3d_grid()
+        scale = _auto_glyph_scale(grid)
+        assert scale > 0
+
+    def test_auto_seed_line(self):
+        p1, p2 = _auto_seed_line((0, 10, 0, 5, 0, 2))
+        assert len(p1) == 3
+        assert p1 != p2
+
+    def test_auto_warp_scale(self):
+        grid = _make_3d_grid()
+        scale = _auto_warp_scale(grid, "U")
+        assert scale > 0
+
+    def test_auto_warp_missing_field(self):
+        grid = _make_3d_grid()
+        assert _auto_warp_scale(grid, "missing") == 1.0
