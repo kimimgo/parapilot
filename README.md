@@ -164,7 +164,7 @@ mypy src/parapilot/        # type check
 | Rendering | Headless VTK + ParaView | GUI-attached only | None (docs search) |
 | Tests | 331 | 0 | 0 |
 | Docker | GPU (EGL) | No | No |
-| MCP Tools | 13 | 8 | 3 |
+| MCP Tools | 13 | 23 | 3 |
 | Plugin | Claude Code plugin | No | No |
 
 ## Known Limitations
