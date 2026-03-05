@@ -199,7 +199,7 @@ class VTKRenderer:
             # Scalar bar
             if self._config.show_scalar_bar and array_name is not None:
                 bar = _build_scalar_bar(mapper, self._config, array_name)
-                renderer.AddActor2D(bar)
+                renderer.AddViewProp(bar)
 
         # Camera
         if camera_config is not None and isinstance(camera_config, CameraConfig):

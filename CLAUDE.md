@@ -81,7 +81,7 @@ server.py (MCP tool)
           → core/output.py (OutputHandler: RunResult → PipelineResult)
 ```
 
-- `server.py`: FastMCP 인스턴스 + 13개 tool 등록, lazy import로 tool impl 로딩
+- `server.py`: FastMCP 인스턴스 + 14개 tool 등록, lazy import로 tool impl 로딩
 - `tools/`: 각 tool의 비즈니스 로직 (render_impl, slice_impl 등)
 - `pipeline/models.py`: Pydantic 모델 (SourceDef, FilterStep, RenderDef, OutputDef 등)
 - `core/compiler.py`: PipelineDefinition → executable Python/VTK script 문자열 생성
@@ -89,6 +89,11 @@ server.py (MCP tool)
 - `core/registry.py`: PascalCase 키 (FilterRegistry, FormatRegistry)
 - `engine/filters.py`: snake_case 키, 실제 VTK 필터 함수 (slice_plane, clip_plane 등)
 - `engine/renderer.py`: 오프스크린 렌더링 (EGL/OSMesa), 싱글톤 vtkRenderWindow 재사용
+- `engine/renderer_cine.py`: 시네마틱 렌더러 (lighting + SSAO + FXAA + auto-camera + PBR)
+- `engine/camera_auto.py`: PCA 형상 분석 + frustum fitting 자동 카메라
+- `engine/lighting.py`: 3-point lighting 프리셋 (cinematic/dramatic/studio/publication/outdoor)
+- `engine/postfx.py`: SSAO + FXAA 후처리
+- `engine/scene.py`: 배경 프리셋 + ground plane
 - `engine/readers.py`: 파일 포맷별 VTK reader 팩토리
 
 ### Dual Registry Gotcha
@@ -126,10 +131,10 @@ server.py (MCP tool)
 
 | 항목 | 수량 |
 |------|------|
-| Tools | 13 |
+| Tools | 14 |
 | Resources | 10 |
 | Prompts | 3 |
-| Tests | 331 |
+| Tests | 419 |
 
 ## Test Structure
 

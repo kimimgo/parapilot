@@ -31,6 +31,8 @@ mcp = FastMCP(
         "- animate: Single-field time series or orbit animation\n"
         "- split_animate: Multi-pane synchronized animation (2-4 panes, "
         "3D render + time-series graphs in a grid layout → GIF)\n"
+        "- cinematic_render: Publication/cinema-quality rendering with auto-framing, "
+        "3-point lighting, SSAO, FXAA, PBR materials\n"
         "- execute_pipeline: Full pipeline DSL for advanced operations\n\n"
         "Resources: parapilot://formats, parapilot://filters, parapilot://colormaps, parapilot://cameras, "
         "parapilot://case-presets, parapilot://pipelines/cfd, parapilot://pipelines/fea, parapilot://pipelines/split-animate"
@@ -611,6 +613,92 @@ async def execute_pipeline(
         return Image(data=result.image_bytes, format="png")
 
     return result.json_data or {"status": "completed", "type": result.output_type}
+
+
+# ---------------------------------------------------------------------------
+# Layer 1: Cinematic Rendering
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+async def cinematic_render(
+    file_path: str,
+    field_name: str | None = None,
+    colormap: str = "Cool to Warm",
+    quality: Literal["draft", "standard", "cinematic", "ultra", "publication"] = "standard",
+    lighting: str | None = "cinematic",
+    background: str | None = "dark_gradient",
+    azimuth: float | None = None,
+    elevation: float | None = None,
+    fill_ratio: float = 0.75,
+    metallic: float = 0.0,
+    roughness: float = 0.5,
+    ground_plane: bool = False,
+    ssao: bool = True,
+    fxaa: bool = True,
+    width: int | None = None,
+    height: int | None = None,
+    scalar_range: list[float] | None = None,
+    timestep: float | str | None = None,
+    output_filename: str = "cinematic.png",
+) -> Image:
+    """Cinematic-quality rendering with auto-framing, 3-point lighting, SSAO, and PBR.
+
+    Produces publication/presentation-quality images with:
+    - PCA-based auto-camera: analyzes object shape and picks optimal viewing angle
+    - 3-point cinematic lighting (key + fill + rim)
+    - SSAO (Screen-Space Ambient Occlusion) for contact shadows
+    - FXAA anti-aliasing
+    - Gradient backgrounds
+    - PBR material support (metallic/roughness)
+
+    Quality presets:
+    - draft: 960x540, no post-processing (fast preview)
+    - standard: 1920x1080, SSAO + FXAA
+    - cinematic: 1920x1080, all effects + ground plane
+    - ultra: 3840x2160, all effects + ground plane
+    - publication: 2400x1800, clean lighting, white background
+
+    Args:
+        file_path: Path to simulation file
+        field_name: Field to visualize (None for auto-detect)
+        colormap: Color map preset (e.g., "Cool to Warm", "Viridis")
+        quality: Rendering quality preset
+        lighting: Lighting preset (cinematic, dramatic, studio, publication, outdoor, None)
+        background: Background preset (dark_gradient, light_gradient, blue_gradient, publication, None)
+        azimuth: Camera azimuth in degrees (None for auto from shape analysis)
+        elevation: Camera elevation in degrees (None for auto from shape analysis)
+        fill_ratio: How much of viewport the object fills (0.0-1.0, default 0.75)
+        metallic: PBR metallic factor (0.0-1.0)
+        roughness: PBR roughness factor (0.0-1.0)
+        ground_plane: Add a semi-transparent ground plane for shadow catching
+        ssao: Enable Screen-Space Ambient Occlusion
+        fxaa: Enable Fast Approximate Anti-Aliasing
+        width: Override image width (None uses quality preset)
+        height: Override image height (None uses quality preset)
+        scalar_range: [min, max] for color scale, None for auto
+        timestep: Specific timestep, "latest", or None for first
+        output_filename: Output PNG filename
+    """
+    file_path = _validate_file_path(file_path)
+    logger.debug("tool.cinematic_render: start file=%s quality=%s", file_path, quality)
+    t0 = time.monotonic()
+    from parapilot.tools.cinematic import cinematic_render_impl
+
+    png_bytes = await cinematic_render_impl(
+        file_path, _runner,
+        field_name=field_name, colormap=colormap, quality=quality,
+        lighting=lighting, background=background,
+        azimuth=azimuth, elevation=elevation, fill_ratio=fill_ratio,
+        metallic=metallic, roughness=roughness, ground_plane=ground_plane,
+        ssao=ssao, fxaa=fxaa, width=width, height=height,
+        scalar_range=scalar_range, timestep=timestep,
+        output_filename=output_filename,
+    )
+    logger.debug("tool.cinematic_render: done in %.2fs", time.monotonic() - t0)
+    if png_bytes:
+        return Image(data=png_bytes, format="png")
+    raise RuntimeError("Cinematic rendering failed: no image produced")
 
 
 # ---------------------------------------------------------------------------
