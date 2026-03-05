@@ -34,9 +34,13 @@ mcp = FastMCP(
         "- cinematic_render: Publication/cinema-quality rendering with auto-framing, "
         "3-point lighting, SSAO, FXAA, PBR materials\n"
         "- compare: Side-by-side or diff comparison of two simulation results\n"
+        "- probe_timeseries: Sample field at a fixed point across timesteps\n"
+        "- batch_render: Render multiple fields in one call\n"
+        "- preview_3d: Export to glTF/glB for interactive 3D browser viewing\n"
         "- execute_pipeline: Full pipeline DSL for advanced operations\n\n"
         "Resources: parapilot://formats, parapilot://filters, parapilot://colormaps, parapilot://cameras, "
-        "parapilot://case-presets, parapilot://pipelines/cfd, parapilot://pipelines/fea, parapilot://pipelines/split-animate"
+        "parapilot://cinematic, parapilot://case-presets, parapilot://pipelines/cfd, parapilot://pipelines/fea, "
+        "parapilot://pipelines/split-animate"
     ),
 )
 
