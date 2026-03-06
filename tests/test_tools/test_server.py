@@ -122,3 +122,17 @@ class TestMainVersionFlag:
 
         pkg_version = version("mcp-server-parapilot")
         assert pkg_version in result.stdout
+
+    def test_python_m_parapilot_version(self):
+        """python -m parapilot --version should also work."""
+        import subprocess
+        import sys
+
+        result = subprocess.run(
+            [sys.executable, "-m", "parapilot", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0
+        assert "mcp-server-parapilot" in result.stdout
