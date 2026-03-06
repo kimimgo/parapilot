@@ -507,3 +507,152 @@ class TestCompilerSourceFiles:
         assert "_source_files" in script
         assert "PartFluid_0001.vtk" in script
         assert "PartFluid_0002.vtk" in script
+
+    def test_file_pattern_no_match(self, compiler):
+        """file_pattern that matches nothing raises ValueError."""
+        pipeline = PipelineDefinition(
+            source=SourceDef(
+                file="/data/dummy.vtk",
+                file_pattern="/nonexistent_dir_xyz_abc/*.vtk",
+            ),
+            pipeline=[],
+            output=OutputDef(type="image", render=RenderDef(field="p")),
+        )
+        with pytest.raises(ValueError, match="matched no files"):
+            compiler.compile(pipeline)
+
+    def test_file_pattern_with_match(self, compiler, tmp_path):
+        """file_pattern matching real files compiles source_files."""
+        (tmp_path / "frame_001.vtk").touch()
+        (tmp_path / "frame_002.vtk").touch()
+
+        pipeline = PipelineDefinition(
+            source=SourceDef(
+                file=str(tmp_path / "frame_001.vtk"),
+                file_pattern=str(tmp_path / "frame_*.vtk"),
+            ),
+            pipeline=[],
+            output=OutputDef(type="image", render=RenderDef(field="p")),
+        )
+        script = compiler.compile(pipeline)
+        assert "_source_files" in script
+        assert "frame_001.vtk" in script
+
+    def test_animation_with_source_files(self, compiler):
+        """Animation compile includes source_files when provided."""
+        pipeline = PipelineDefinition(
+            source=SourceDef(
+                file="/data/case_0001.vtk",
+                files=["/data/case_0001.vtk", "/data/case_0002.vtk"],
+            ),
+            pipeline=[],
+            output=OutputDef(
+                type="animation",
+                animation=AnimationDef(render=RenderDef(field="p"), fps=10),
+            ),
+        )
+        script = compiler.compile(pipeline)
+        assert "case_0001.vtk" in script
+        assert "case_0002.vtk" in script
+
+    def test_animation_with_file_pattern(self, compiler, tmp_path):
+        """Animation compile resolves file_pattern."""
+        (tmp_path / "step_001.vtk").touch()
+        (tmp_path / "step_002.vtk").touch()
+
+        pipeline = PipelineDefinition(
+            source=SourceDef(
+                file=str(tmp_path / "step_001.vtk"),
+                file_pattern=str(tmp_path / "step_*.vtk"),
+            ),
+            pipeline=[],
+            output=OutputDef(
+                type="animation",
+                animation=AnimationDef(render=RenderDef(field="p"), fps=10),
+            ),
+        )
+        script = compiler.compile(pipeline)
+        assert "step_001.vtk" in script
+
+    def test_animation_with_filters(self, compiler):
+        """Animation with pipeline filters includes filter code."""
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[FilterStep(filter="Slice", params={"origin": [0, 0, 0]})],
+            output=OutputDef(
+                type="animation",
+                animation=AnimationDef(render=RenderDef(field="p"), fps=10),
+            ),
+        )
+        script = compiler.compile(pipeline)
+        assert "apply_filter" in script or "slice" in script.lower()
+
+    def test_render_without_render_def_raises(self, compiler):
+        """Image output without render definition raises."""
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(type="image"),
+        )
+        with pytest.raises(ValueError, match="render"):
+            compiler.compile(pipeline)
+
+    def test_split_anim_with_source_files(self, compiler):
+        """Split animation compile includes source_files."""
+        pipeline = PipelineDefinition(
+            source=SourceDef(
+                file="/data/case_0001.vtk",
+                files=["/data/case_0001.vtk", "/data/case_0002.vtk"],
+            ),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(
+                            type="render", row=0, col=0,
+                            render_pane=RenderPaneDef(render=RenderDef(field="p")),
+                        ),
+                        PaneDef(
+                            type="graph", row=0, col=1,
+                            graph_pane=GraphPaneDef(
+                                series=[GraphSeriesDef(field="p", stat="mean")]
+                            ),
+                        ),
+                    ],
+                    layout=LayoutDef(rows=1, cols=2),
+                ),
+            ),
+        )
+        script = compiler.compile(pipeline)
+        assert "case_0001.vtk" in script
+        assert "case_0002.vtk" in script
+
+    def test_split_anim_render_pane_with_filters(self, compiler):
+        """Split animation render pane with pipeline filters."""
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(
+                            type="render", row=0, col=0,
+                            render_pane=RenderPaneDef(
+                                render=RenderDef(field="p"),
+                                pipeline=[
+                                    FilterStep(
+                                        filter="Slice",
+                                        params={"origin": [0, 0, 0]},
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ],
+                    layout=LayoutDef(rows=1, cols=1),
+                ),
+            ),
+        )
+        script = compiler.compile(pipeline)
+        assert "Slice" in script or "slice_plane" in script.lower()
