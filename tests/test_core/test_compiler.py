@@ -628,6 +628,34 @@ class TestCompilerSourceFiles:
         assert "case_0001.vtk" in script
         assert "case_0002.vtk" in script
 
+    def test_split_anim_with_file_pattern(self, compiler, tmp_path):
+        """Split animation compile resolves file_pattern via glob."""
+        (tmp_path / "step_001.vtk").touch()
+        (tmp_path / "step_002.vtk").touch()
+
+        pipeline = PipelineDefinition(
+            source=SourceDef(
+                file=str(tmp_path / "step_001.vtk"),
+                file_pattern=str(tmp_path / "step_*.vtk"),
+            ),
+            pipeline=[],
+            output=OutputDef(
+                type="split_animation",
+                split_animation=SplitAnimationDef(
+                    panes=[
+                        PaneDef(
+                            type="render", row=0, col=0,
+                            render_pane=RenderPaneDef(render=RenderDef(field="p")),
+                        ),
+                    ],
+                    layout=LayoutDef(rows=1, cols=1),
+                ),
+            ),
+        )
+        script = compiler.compile(pipeline)
+        assert "step_001.vtk" in script
+        assert "step_002.vtk" in script
+
     def test_split_anim_render_pane_with_filters(self, compiler):
         """Split animation render pane with pipeline filters."""
         pipeline = PipelineDefinition(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -411,6 +412,194 @@ class TestDockerModeNoGPU:
 
         assert "--gpus" not in captured_args
         assert "VTK_DEFAULT_OPENGL_WINDOW=vtkOSOpenGLRenderWindow" in captured_args
+
+
+class TestOutputFilePermissionError:
+    """execute() tolerates PermissionError when reading output files."""
+
+    @pytest.mark.asyncio
+    async def test_permission_error_skipped(self) -> None:
+        """Output file with PermissionError is silently skipped."""
+        runner = VTKRunner(mode="local")
+
+        async def fake_subprocess(*args, **kwargs):
+            import pathlib
+            script_path = pathlib.Path(args[1])
+            output_dir = script_path.parent / "output"
+            # Create an output file
+            (output_dir / "good.png").write_bytes(b"PNG")
+            (output_dir / "bad.dat").write_bytes(b"DATA")
+
+            mock_proc = AsyncMock()
+            mock_proc.communicate = AsyncMock(return_value=(b"", b""))
+            mock_proc.returncode = 0
+            return mock_proc
+
+        original_read_bytes = Path.read_bytes
+
+        def patched_read_bytes(self):
+            if self.name == "bad.dat":
+                raise PermissionError("denied")
+            return original_read_bytes(self)
+
+        with (
+            patch(
+                "parapilot.core.runner.asyncio.create_subprocess_exec",
+                side_effect=fake_subprocess,
+            ),
+            patch.object(Path, "read_bytes", patched_read_bytes),
+        ):
+            result = await runner.execute("pass")
+
+        assert result.exit_code == 0
+        assert "good.png" in result.output_file_data
+        assert "bad.dat" not in result.output_file_data
+
+
+class TestExecuteDockerMode:
+    """execute() through Docker mode path (line 102)."""
+
+    @pytest.mark.asyncio
+    async def test_execute_docker_mode(self) -> None:
+        """execute() with docker mode calls _run_docker."""
+        runner = VTKRunner(mode="docker")
+
+        with patch.object(
+            runner, "_run_docker",
+            new_callable=AsyncMock,
+            return_value=RunResult(stdout="", stderr="", exit_code=0),
+        ) as mock_docker:
+            result = await runner.execute("print('hello')")
+
+        assert result.exit_code == 0
+        mock_docker.assert_awaited_once()
+
+
+class TestDockerExtraMounts:
+    """Docker _run_docker includes extra_mounts."""
+
+    @pytest.mark.asyncio
+    async def test_extra_mounts_in_docker_args(self) -> None:
+        from pathlib import Path
+
+        from parapilot.config import PVConfig
+
+        config = PVConfig(data_dir=Path("/data"))
+        runner = VTKRunner(mode="docker", config=config)
+
+        captured_args: list[str] = []
+
+        async def fake_subprocess(*args, **_kw):
+            captured_args.extend(args)
+            mock_proc = AsyncMock()
+            mock_proc.communicate = AsyncMock(return_value=(b"", b""))
+            mock_proc.returncode = 0
+            return mock_proc
+
+        with (
+            patch("parapilot.core.runner.asyncio.create_subprocess_exec", side_effect=fake_subprocess),
+            patch("parapilot.core.runner.uuid") as mock_uuid,
+        ):
+            mock_uuid.uuid4.return_value = MagicMock(hex="mount123456")
+            import tempfile
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                script = Path(tmpdir) / "pipeline.py"
+                script.write_text("pass")
+                output_dir = Path(tmpdir) / "output"
+                output_dir.mkdir()
+                await runner._run_docker(
+                    script, output_dir, timeout=10.0,
+                    extra_mounts=[Path("/sim/data")],
+                )
+
+        # Verify extra mount is in args
+        assert "-v" in captured_args
+        mount_str = "/sim/data:/sim/data:ro"
+        assert mount_str in captured_args
+
+
+class TestCleanupOrphanedExceptions:
+    """cleanup_orphaned_containers handles timeout/OSError at each stage."""
+
+    @pytest.mark.asyncio
+    async def test_cleanup_ps_timeout(self) -> None:
+        """Timeout during 'docker ps' returns 0."""
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            side_effect=asyncio.TimeoutError,
+        ):
+            count = await VTKRunner.cleanup_orphaned_containers()
+        assert count == 0
+
+    @pytest.mark.asyncio
+    async def test_cleanup_ps_oserror(self) -> None:
+        """OSError during 'docker ps' returns 0."""
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            side_effect=OSError("docker not found"),
+        ):
+            count = await VTKRunner.cleanup_orphaned_containers()
+        assert count == 0
+
+    @pytest.mark.asyncio
+    async def test_cleanup_rm_timeout(self) -> None:
+        """Timeout during 'docker rm' still returns container count."""
+        call_count = 0
+
+        async def fake_subprocess(*args, **_kw):
+            nonlocal call_count
+            call_count += 1
+            mock_proc = AsyncMock()
+            if call_count == 1:
+                # docker ps succeeds
+                mock_proc.communicate = AsyncMock(return_value=(b"abc123\n", b""))
+            else:
+                # docker rm times out
+                mock_proc.communicate = AsyncMock(side_effect=asyncio.TimeoutError)
+            return mock_proc
+
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            side_effect=fake_subprocess,
+        ):
+            count = await VTKRunner.cleanup_orphaned_containers()
+        assert count == 1
+
+    @pytest.mark.asyncio
+    async def test_cleanup_rm_oserror(self) -> None:
+        """OSError during 'docker rm' still returns container count."""
+        call_count = 0
+
+        async def fake_subprocess(*args, **_kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                mock_proc = AsyncMock()
+                mock_proc.communicate = AsyncMock(return_value=(b"abc123\ndef456\n", b""))
+                return mock_proc
+            else:
+                raise OSError("docker not found")
+
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            side_effect=fake_subprocess,
+        ):
+            count = await VTKRunner.cleanup_orphaned_containers()
+        assert count == 2
+
+    @pytest.mark.asyncio
+    async def test_stop_container_timeout(self) -> None:
+        """_stop_container handles TimeoutError gracefully."""
+        mock_proc = AsyncMock()
+        mock_proc.communicate = AsyncMock(side_effect=asyncio.TimeoutError)
+
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ):
+            # Should not raise
+            await VTKRunner._stop_container("parapilot_test_timeout")
 
 
 class TestDefaultTimeout:
