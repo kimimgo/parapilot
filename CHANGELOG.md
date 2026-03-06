@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - meshio fallback reader for 50+ additional mesh formats
 - 5 new VTK filters: SmoothMesh, ProbePoint, CleanPolyData, Shrink, Tube
 - HTTP/SSE transport mode (`--transport sse|streamable-http`)
+- MCP Tasks support: `animate`, `split_animate`, `execute_pipeline` as async background tasks (FastMCP 3.x, backward-compatible with 2.x)
+- `pip install mcp-server-parapilot[tasks]` for FastMCP 3.x with MCP Tasks
+- 8 path traversal security tests: symlink escape, null byte injection, prefix attack
 - Dockerfile.cpu for CPU-only (OSMesa) deployment without GPU
 - MkDocs Material API documentation site (16 pages)
 - Thermal analysis workflow example (`examples/thermal_analysis.json`)
@@ -43,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Test count: 310 → 1128 (99% coverage)
+- Test count: 310 → 1134 (99% coverage)
 - CI coverage threshold: 75% → 80%
 - File format support: 26 → 50+ (via meshio fallback)
 - CI matrix: Python 3.10/3.12 → 3.10/3.11/3.12/3.13
