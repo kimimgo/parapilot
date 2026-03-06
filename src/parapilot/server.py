@@ -886,7 +886,7 @@ async def preview_3d(
 
 
 def _register_resources() -> None:
-    """Register MCP resources (called at import time)."""
+    """Register MCP resources (called once at import time)."""
     from parapilot.resources.catalog import register_resources
 
     register_resources(mcp)
@@ -898,10 +898,16 @@ def _register_resources() -> None:
 
 
 def _register_prompts() -> None:
-    """Register MCP prompts (called at import time)."""
+    """Register MCP prompts (called once at import time)."""
     from parapilot.prompts.guides import register_prompts
 
     register_prompts(mcp)
+
+
+# Register resources and prompts at module import time so they are available
+# for both main() entry point and programmatic/in-memory usage.
+_register_resources()
+_register_prompts()
 
 
 # ---------------------------------------------------------------------------
@@ -989,8 +995,7 @@ def main() -> None:
         # No event loop available yet — skip cleanup
         pass
 
-    _register_resources()
-    _register_prompts()
+    # Resources and prompts are already registered at module level above.
 
     if args.transport == "stdio":
         mcp.run()

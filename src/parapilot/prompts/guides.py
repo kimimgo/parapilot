@@ -8,8 +8,15 @@ if TYPE_CHECKING:
     from fastmcp import FastMCP
 
 
+_registered_instances: set[int] = set()
+
+
 def register_prompts(mcp: FastMCP) -> None:
-    """Register all MCP prompts."""
+    """Register all MCP prompts (idempotent per mcp instance)."""
+    mcp_id = id(mcp)
+    if mcp_id in _registered_instances:
+        return
+    _registered_instances.add(mcp_id)
 
     @mcp.prompt()
     def cfd_postprocess(simulation_type: str = "general") -> str:

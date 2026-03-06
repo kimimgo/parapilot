@@ -9,27 +9,10 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from parapilot.server import mcp
 
-
-def _ensure_registered():
-    """Ensure resources and prompts are registered (normally done in main())."""
-    from parapilot.prompts.guides import register_prompts
-    from parapilot.resources.catalog import register_resources
-
-    # Only register once — check if already registered
-    if not hasattr(_ensure_registered, "_done"):
-        register_resources(mcp)
-        register_prompts(mcp)
-        _ensure_registered._done = True
-
-
-@pytest.fixture(autouse=True, scope="module")
-def _register_all():
-    """Module-level fixture to register resources and prompts."""
-    _ensure_registered()
+# Resources and prompts are now registered at module import time in server.py,
+# so no explicit registration is needed here.
 
 
 # ---------------------------------------------------------------------------

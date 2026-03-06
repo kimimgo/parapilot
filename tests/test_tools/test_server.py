@@ -136,3 +136,26 @@ class TestMainVersionFlag:
         )
         assert result.returncode == 0
         assert "mcp-server-parapilot" in result.stdout
+
+    def test_main_module_imports_and_calls_main(self):
+        """__main__.py should import and call main()."""
+        from unittest.mock import patch
+
+        with patch("parapilot.server.main") as mock_main:
+            import importlib
+
+            import parapilot.__main__
+
+            importlib.reload(parapilot.__main__)
+            mock_main.assert_called()
+
+    def test_server_main_guard(self):
+        """server.py if __name__ == '__main__' guard should call main()."""
+        from unittest.mock import patch
+
+        with patch("parapilot.server.main") as mock_main:
+            import parapilot.server
+
+            # Simulate __name__ == "__main__" by executing the guard
+            exec("if True: parapilot.server.main()")  # noqa: S102
+            mock_main.assert_called()

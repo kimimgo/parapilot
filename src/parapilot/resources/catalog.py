@@ -12,8 +12,15 @@ if TYPE_CHECKING:
     from fastmcp import FastMCP
 
 
+_registered_instances: set[int] = set()
+
+
 def register_resources(mcp: FastMCP) -> None:
-    """Register all MCP resources."""
+    """Register all MCP resources (idempotent per mcp instance)."""
+    mcp_id = id(mcp)
+    if mcp_id in _registered_instances:
+        return
+    _registered_instances.add(mcp_id)
 
     @mcp.resource("parapilot://formats")
     def formats_resource() -> str:
