@@ -249,7 +249,7 @@ class DataReader:
 
         try:
             mesh = meshio.read(str(self._path))
-        except Exception as exc:
+        except (ValueError, TypeError, OSError, KeyError, IndexError) as exc:
             available = ", ".join(sorted(_READER_MAP.keys()))
             msg = (
                 f"Unsupported file format '{suffix}'. Native VTK: {available}. "

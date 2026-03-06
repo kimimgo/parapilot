@@ -336,7 +336,7 @@ class TestMeshioFallback:
 
         reader = DataReader(bad_file)
         mock_meshio = MagicMock()
-        mock_meshio.read.side_effect = Exception("Cannot read")
+        mock_meshio.read.side_effect = ValueError("Cannot read")
 
         with patch.dict("sys.modules", {"meshio": mock_meshio}):
             with pytest.raises(FileFormatError, match="meshio also failed"):
@@ -352,7 +352,7 @@ class TestMeshioFallback:
 
         reader = DataReader(typo_file)
         mock_meshio = MagicMock()
-        mock_meshio.read.side_effect = Exception("Cannot read")
+        mock_meshio.read.side_effect = ValueError("Cannot read")
 
         with patch.dict("sys.modules", {"meshio": mock_meshio}):
             with pytest.raises(FileFormatError, match="Did you mean"):

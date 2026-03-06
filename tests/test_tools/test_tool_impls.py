@@ -217,6 +217,105 @@ class TestIsosurfaceImpl:
         with pytest.raises(RuntimeError, match="IsoSurface failed"):
             await pv_isosurface_impl(str(tmp_path), str(tmp_path / "out"))
 
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.isosurface.asyncio.create_subprocess_exec")
+    async def test_isosurface_custom_params(self, mock_subprocess, tmp_path):
+        """Custom docker_image, vars, and only_type parameters are passed correctly."""
+        from parapilot.tools.isosurface import pv_isosurface_impl
+
+        mock_proc = AsyncMock()
+        mock_proc.returncode = 0
+        mock_proc.communicate.return_value = (b"ok", b"")
+        mock_subprocess.return_value = mock_proc
+
+        bi4_dir = tmp_path / "bi4"
+        bi4_dir.mkdir()
+        output_dir = tmp_path / "out"
+
+        result = await pv_isosurface_impl(
+            str(bi4_dir), str(output_dir),
+            vars="+vel", only_type="+all", docker_image="custom:v2",
+        )
+        assert result["count"] == 0  # no iso_*.vtk files created
+
+        # Verify Docker command includes custom params
+        call_args = mock_subprocess.call_args[0]
+        assert "custom:v2" in call_args
+        assert "-vars:+vel" in call_args
+        assert "-onlytype:+all" in call_args
+
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.isosurface.asyncio.create_subprocess_exec")
+    async def test_isosurface_empty_output(self, mock_subprocess, tmp_path):
+        """Zero output files returns count=0."""
+        from parapilot.tools.isosurface import pv_isosurface_impl
+
+        mock_proc = AsyncMock()
+        mock_proc.returncode = 0
+        mock_proc.communicate.return_value = (b"", b"")
+        mock_subprocess.return_value = mock_proc
+
+        bi4_dir = tmp_path / "bi4"
+        bi4_dir.mkdir()
+        output_dir = tmp_path / "out"
+
+        result = await pv_isosurface_impl(str(bi4_dir), str(output_dir))
+        assert result["count"] == 0
+        assert result["iso_files"] == []
+        assert result["stdout"] == ""
+
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.isosurface.asyncio.create_subprocess_exec")
+    async def test_isosurface_stdout_truncation(self, mock_subprocess, tmp_path):
+        """Stdout is truncated to last 500 chars."""
+        from parapilot.tools.isosurface import pv_isosurface_impl
+
+        mock_proc = AsyncMock()
+        mock_proc.returncode = 0
+        long_output = b"x" * 1000
+        mock_proc.communicate.return_value = (long_output, b"")
+        mock_subprocess.return_value = mock_proc
+
+        bi4_dir = tmp_path / "bi4"
+        bi4_dir.mkdir()
+        output_dir = tmp_path / "out"
+
+        result = await pv_isosurface_impl(str(bi4_dir), str(output_dir))
+        assert len(result["stdout"]) == 500
+
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.isosurface.asyncio.create_subprocess_exec")
+    async def test_isosurface_error_includes_exit_code(self, mock_subprocess, tmp_path):
+        """Error message includes the exit code."""
+        from parapilot.tools.isosurface import pv_isosurface_impl
+
+        mock_proc = AsyncMock()
+        mock_proc.returncode = 137
+        mock_proc.communicate.return_value = (b"", b"Killed")
+        mock_subprocess.return_value = mock_proc
+
+        with pytest.raises(RuntimeError, match="exit 137"):
+            await pv_isosurface_impl(str(tmp_path), str(tmp_path / "out"))
+
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.isosurface.asyncio.create_subprocess_exec")
+    async def test_isosurface_creates_output_dir(self, mock_subprocess, tmp_path):
+        """Output directory is created automatically if it doesn't exist."""
+        from parapilot.tools.isosurface import pv_isosurface_impl
+
+        mock_proc = AsyncMock()
+        mock_proc.returncode = 0
+        mock_proc.communicate.return_value = (b"ok", b"")
+        mock_subprocess.return_value = mock_proc
+
+        bi4_dir = tmp_path / "bi4"
+        bi4_dir.mkdir()
+        output_dir = tmp_path / "nested" / "output"
+
+        result = await pv_isosurface_impl(str(bi4_dir), str(output_dir))
+        assert output_dir.is_dir()
+        assert result["output_dir"] == str(output_dir.resolve())
+
 
 # ---------------------------------------------------------------------------
 # extract impls

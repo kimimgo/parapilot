@@ -101,6 +101,68 @@ class TestValidateFilePath:
             validate(str(tmp_path / "caviti.vtk"))
 
 
+    def test_rejects_symlink_escape(self, tmp_path):
+        """Symlink pointing outside data_dir should be rejected."""
+        data_dir = tmp_path / "data"
+        data_dir.mkdir()
+        outside_file = tmp_path / "secret.txt"
+        outside_file.write_text("secret")
+        symlink = data_dir / "link.vtk"
+        symlink.symlink_to(outside_file)
+
+        validate = self._reload_with_data_dir(str(data_dir))
+        with pytest.raises(ValueError, match="Access denied"):
+            validate(str(symlink))
+
+    def test_rejects_double_encoded_traversal(self):
+        """Double-encoded path traversal must be blocked."""
+        validate = self._reload_with_data_dir("/data")
+        with pytest.raises((ValueError, FileNotFoundError)):
+            validate("/data/%2e%2e/etc/passwd")
+
+    def test_rejects_null_byte_in_path(self):
+        """Null byte injection attempt."""
+        validate = self._reload_with_data_dir("/data")
+        with pytest.raises((ValueError, FileNotFoundError)):
+            validate("/data/file.vtk\x00.txt")
+
+    def test_rejects_path_with_only_dots(self):
+        """Path consisting of dots only."""
+        validate = self._reload_with_data_dir("/data")
+        with pytest.raises((ValueError, FileNotFoundError)):
+            validate("/data/../../..")
+
+    def test_rejects_trailing_slash_escape(self):
+        """Trailing slash manipulation."""
+        validate = self._reload_with_data_dir("/data")
+        with pytest.raises(ValueError, match="Access denied"):
+            validate("/data/../etc/passwd/")
+
+    def test_path_with_spaces_inside_data_dir(self, tmp_path):
+        """Paths with spaces should work when valid."""
+        data_dir = tmp_path / "my data"
+        data_dir.mkdir()
+        test_file = data_dir / "my file.vtk"
+        test_file.touch()
+
+        validate = self._reload_with_data_dir(str(data_dir))
+        result = validate(str(test_file))
+        assert "my file.vtk" in result
+
+    def test_rejects_data_dir_prefix_attack(self, tmp_path):
+        """'/data-evil/file' must NOT match '/data' via prefix."""
+        data_dir = tmp_path / "data"
+        data_dir.mkdir()
+        evil_dir = tmp_path / "data-evil"
+        evil_dir.mkdir()
+        evil_file = evil_dir / "file.vtk"
+        evil_file.touch()
+
+        validate = self._reload_with_data_dir(str(data_dir))
+        with pytest.raises(ValueError, match="Access denied"):
+            validate(str(evil_file))
+
+
 class TestMainVersionFlag:
     """Test --version flag on the CLI entry point."""
 

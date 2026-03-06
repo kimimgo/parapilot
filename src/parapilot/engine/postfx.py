@@ -81,7 +81,7 @@ def apply_ssao(
         logger.debug("SSAO enabled: radius=%.4f, bias=%.4f, kernel=%d", r, b, kernel_size)
         return True
 
-    except Exception:
+    except (AttributeError, RuntimeError, TypeError):
         logger.warning("Failed to enable SSAO", exc_info=True)
         return False
 
@@ -112,7 +112,7 @@ def apply_fxaa(
             opts.SetRelativeContrastThreshold(contrast_threshold)
         logger.debug("FXAA enabled: subpixel=%.2f, threshold=%.3f", subpixel_blend, contrast_threshold)
         return True
-    except Exception:
+    except (AttributeError, RuntimeError, TypeError):
         logger.warning("Failed to enable FXAA", exc_info=True)
         return False
 
