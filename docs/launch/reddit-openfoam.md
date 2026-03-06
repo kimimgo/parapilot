@@ -31,7 +31,7 @@ The AI loads the case, calls the render and slice tools, and returns PNG images 
 
 - `.foam` file loading (reconstructed and decomposed cases)
 - VTK/VTM/VTP outputs from OpenFOAM's function objects
-- Field rendering with 14 colormaps (plasma, turbo, coolwarm, jet...)
+- Field rendering with 18 colormaps (plasma, turbo, coolwarm, jet...)
 - Slice, clip, contour, streamlines, surface integration
 - Time-series animation (GIF/MP4)
 - `inspect_data` to check available fields, mesh stats, time steps

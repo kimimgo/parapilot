@@ -38,7 +38,25 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource("parapilot://colormaps")
     def colormaps_resource() -> str:
         """Color map presets and recommended usage per field type."""
-        return json.dumps(COLORMAP_GUIDE, indent=2)
+        data = {
+            "colormaps": COLORMAP_GUIDE,
+            "field_recommendations": {
+                "pressure": "Cool to Warm",
+                "velocity": "Viridis",
+                "temperature": "Inferno",
+                "stress": "Cool to Warm",
+                "displacement": "Turbo",
+                "vorticity": "Turbo",
+                "density": "X Ray",
+                "volume_fraction": "Blue to Red Rainbow",
+                "turbulence_k": "Plasma",
+                "wall_shear": "Plasma",
+                "mesh_quality": "RdYlGn",
+                "elevation": "Terrain",
+                "_default": "Cool to Warm",
+            },
+        }
+        return json.dumps(data, indent=2)
 
     @mcp.resource("parapilot://representations")
     def representations_resource() -> str:
