@@ -788,6 +788,56 @@ class TestCompileVideoEdgeCases:
         assert "no output" in error.lower()
 
 
+class TestEffectiveFpsFromJsonData:
+    """Cover line 285: effective_fps override from json_data."""
+
+    @pytest.mark.asyncio
+    async def test_effective_fps_used_from_json_data(self):
+        """When result.json_data has effective_fps, use it for video compilation."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from parapilot.core.output import PipelineResult
+        from parapilot.core.runner import RunResult
+        from parapilot.pipeline.engine import execute_pipeline
+        from parapilot.pipeline.models import AnimationDef
+
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(
+                type="animation",
+                animation=AnimationDef(render=RenderDef(field="p"), fps=10, output_format="mp4"),
+                render=RenderDef(field="p"),
+            ),
+        )
+
+        run_result = RunResult(
+            exit_code=0, stdout="", stderr="",
+            output_file_data={"frame_000000.png": b"\x89PNG"},
+            json_result=None,
+        )
+        mock_runner = MagicMock()
+        mock_runner.execute = AsyncMock(return_value=run_result)
+        mock_compiler = MagicMock()
+        mock_compiler.compile.return_value = "s"
+        mock_output = MagicMock()
+        mock_output.parse.return_value = PipelineResult(
+            output_type="animation", image_bytes=None,
+            json_data={"effective_fps": 24.0},
+        )
+
+        with patch(
+            "parapilot.pipeline.engine.compile_video",
+            new_callable=AsyncMock,
+            return_value=(b"video", None),
+        ) as mock_compile:
+            await execute_pipeline(pipeline, mock_runner, mock_compiler, mock_output)
+            # effective_fps should be 24.0 (from json_data), not 10 (from AnimationDef)
+            mock_compile.assert_called_once()
+            call_kwargs = mock_compile.call_args
+            assert call_kwargs[1]["fps"] == 24.0 or call_kwargs[0][1] == 24.0
+
+
 class TestPipelineModels:
     def test_pipeline_from_json(self):
         data = {

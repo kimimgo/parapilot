@@ -73,6 +73,14 @@ class TestFiltersResource:
             assert "vtk_class" in info
 
 
+class TestCasePresetsResource:
+    def test_returns_valid_json(self):
+        resources = _capture_resources()
+        data = json.loads(resources["parapilot://case-presets"]())
+        assert isinstance(data, dict)
+        assert len(data) > 0
+
+
 class TestCamerasResource:
     def test_has_presets_and_auto_camera(self):
         resources = _capture_resources()
