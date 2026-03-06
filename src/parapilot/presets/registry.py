@@ -424,6 +424,8 @@ COLORMAP_GUIDE: dict[str, dict[str, str]] = {
     "Magma": {"type": "sequential", "use": "Heat maps, similar to inferno but softer"},
     "Cividis": {"type": "sequential", "use": "Colorblind-safe, optimized for CVD viewers"},
     "Twilight": {"type": "cyclic", "use": "Phase, angle, cyclic data (wraps at endpoints)"},
+    "Blue to Red Rainbow": {"type": "rainbow", "use": "Volume fraction, multiphase flow"},
+    "X Ray": {"type": "sequential", "use": "Density, opacity, medical imaging"},
 }
 
 # ---------------------------------------------------------------------------

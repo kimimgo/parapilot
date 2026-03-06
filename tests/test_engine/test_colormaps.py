@@ -25,8 +25,12 @@ class TestListColormaps:
     def test_includes_core_presets(self):
         result = list_colormaps()
         for name in ("viridis", "cool to warm", "plasma", "inferno", "jet",
-                      "magma", "cividis", "twilight"):
+                      "magma", "cividis", "twilight",
+                      "blue to red rainbow", "x ray"):
             assert name in result
+
+    def test_count_matches_registry(self):
+        assert len(list_colormaps()) == len(COLORMAP_REGISTRY)
 
     def test_no_duplicates(self):
         result = list_colormaps()
@@ -154,3 +158,14 @@ class TestBuildLut:
             calls = mock_ctf.AddRGBPoint.call_args_list
             assert calls[0][0][0] == pytest.approx(10.0)  # lo + 0.0*(20-10)
             assert calls[1][0][0] == pytest.approx(20.0)  # lo + 1.0*(20-10)
+
+    @pytest.mark.parametrize("name", [
+        "blue to red rainbow", "x ray",
+    ])
+    def test_build_lut_new_colormaps(self, mock_vtk, name):
+        """New colormaps (blue to red rainbow, x ray) build successfully."""
+        mock, mock_ctf = mock_vtk
+        with patch.dict("sys.modules", {"vtk": mock}):
+            result = build_lut(name)
+            assert result is mock_ctf
+            assert mock_ctf.AddRGBPoint.call_count == len(COLORMAP_REGISTRY[name])

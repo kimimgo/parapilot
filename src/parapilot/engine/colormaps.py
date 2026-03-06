@@ -144,6 +144,21 @@ _TWILIGHT: list[tuple[float, float, float, float]] = [
     (1.000, 0.886, 0.851, 0.886),
 ]
 
+_BLUE_TO_RED_RAINBOW: list[tuple[float, float, float, float]] = [
+    (0.000, 0.000, 0.000, 1.000),
+    (0.250, 0.000, 1.000, 1.000),
+    (0.500, 0.000, 1.000, 0.000),
+    (0.750, 1.000, 1.000, 0.000),
+    (1.000, 1.000, 0.000, 0.000),
+]
+
+_X_RAY: list[tuple[float, float, float, float]] = [
+    (0.000, 1.000, 1.000, 1.000),
+    (0.333, 0.600, 0.600, 0.600),
+    (0.667, 0.300, 0.300, 0.300),
+    (1.000, 0.000, 0.000, 0.000),
+]
+
 # ---------------------------------------------------------------------------
 # Registry — name → control points
 # Names are case-insensitive, with aliases for common spellings.
@@ -166,6 +181,8 @@ COLORMAP_REGISTRY: dict[str, list[tuple[float, float, float, float]]] = {
     "magma": _MAGMA,
     "cividis": _CIVIDIS,
     "twilight": _TWILIGHT,
+    "blue to red rainbow": _BLUE_TO_RED_RAINBOW,
+    "x ray": _X_RAY,
 }
 
 
