@@ -76,7 +76,7 @@
           "title": "awesome-mcp-servers PR 제출",
           "priority": "P0",
           "date": "2026-03-08",
-          "status": "todo",
+          "status": "done",
           "check_cmd": "gh pr list --repo punkpeye/awesome-mcp-servers --author kimimgo --state open --json number --jq 'length' 2>/dev/null | grep -qv '^0$'",
           "notes": "science/engineering 카테고리, 1줄 설명 + 링크"
         },
@@ -103,7 +103,7 @@
           "title": "README LLNL comparison 업데이트 (tools 수 등)",
           "priority": "P1",
           "date": "2026-03-08",
-          "status": "todo",
+          "status": "done",
           "check_cmd": "grep -q '23 tools' /home/imgyu/workspace/02_active/dev/kimtech/README.md 2>/dev/null || grep -q '23' /home/imgyu/workspace/02_active/dev/kimtech/README.md 2>/dev/null",
           "notes": "LLNL paraview_mcp 8->23 tools 수정"
         }

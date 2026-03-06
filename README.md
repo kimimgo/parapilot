@@ -186,7 +186,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup, architecture guide, a
 | | parapilot | LLNL/paraview_mcp | Kitware/vtk-mcp |
 |---|---|---|---|
 | Rendering | Headless VTK + ParaView | GUI-attached only | None (docs search) |
-| Tests | 748 | 0 | 0 |
+| Tests | 1048 | 0 | 0 |
 | Docker | GPU (EGL) | No | No |
 | MCP Tools | 18 | 23 | 3 |
 | Plugin | Claude Code plugin | No | No |
@@ -201,8 +201,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup, architecture guide, a
 ## Contributors
 
 <!-- ALL-CONTRIBUTORS-LIST:START -->
-| [<img src="https://avatars.githubusercontent.com/u/21175731?v=4" width="60px;" alt="kimimgo"/><br /><sub><b>kimimgo</b></sub>](https://github.com/kimimgo) | [<img src="https://avatars.githubusercontent.com/u/203002256?v=4" width="60px;" alt="NikanEidi"/><br /><sub><b>NikanEidi</b></sub>](https://github.com/NikanEidi) |
-| :---: | :---: |
+| [<img src="https://avatars.githubusercontent.com/u/21175731?v=4" width="60px;" alt="kimimgo"/><br /><sub><b>kimimgo</b></sub>](https://github.com/kimimgo) |
+| :---: |
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ## License
