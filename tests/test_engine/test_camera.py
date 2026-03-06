@@ -157,3 +157,100 @@ class TestCustomCamera:
         )
         assert cam.parallel_projection is True
         assert cam.parallel_scale is None
+
+
+# ---------------------------------------------------------------------------
+# preset_camera edge cases (coverage: line 74)
+# ---------------------------------------------------------------------------
+
+class TestPresetCameraZeroDirection:
+    """Test that a zero-magnitude direction vector is handled safely."""
+
+    def test_zero_direction_no_crash(self, monkeypatch):
+        """If _PRESETS returned (0,0,0) direction, mag fallback to 1.0."""
+        from parapilot.engine import camera as cam_mod
+
+        original = cam_mod._PRESETS.copy()
+        cam_mod._PRESETS["zero"] = ((0.0, 0.0, 0.0), (0.0, 0.0, 1.0))
+        try:
+            result = preset_camera("zero", (-1, 1, -1, 1, -1, 1))
+            # With zero direction, position == center (offset is 0)
+            assert result.focal_point == pytest.approx((0.0, 0.0, 0.0))
+            assert isinstance(result.position, tuple)
+        finally:
+            cam_mod._PRESETS.clear()
+            cam_mod._PRESETS.update(original)
+
+
+# ---------------------------------------------------------------------------
+# apply_camera (coverage: lines 135-149)
+# ---------------------------------------------------------------------------
+
+class TestApplyCamera:
+    def test_apply_perspective(self):
+        """apply_camera sets perspective mode correctly."""
+        from unittest.mock import MagicMock
+
+        from parapilot.engine.camera import apply_camera
+
+        renderer = MagicMock()
+        camera = MagicMock()
+        renderer.GetActiveCamera.return_value = camera
+
+        config = CameraConfig(
+            position=(10.0, 0.0, 0.0),
+            focal_point=(0.0, 0.0, 0.0),
+            view_up=(0.0, 0.0, 1.0),
+        )
+        apply_camera(renderer, config)
+
+        camera.SetPosition.assert_called_once_with(10.0, 0.0, 0.0)
+        camera.SetFocalPoint.assert_called_once_with(0.0, 0.0, 0.0)
+        camera.SetViewUp.assert_called_once_with(0.0, 0.0, 1.0)
+        camera.SetParallelProjection.assert_called_once_with(False)
+        camera.SetParallelScale.assert_not_called()
+        renderer.ResetCameraClippingRange.assert_called_once()
+
+    def test_apply_parallel_with_scale(self):
+        """apply_camera sets parallel projection and scale."""
+        from unittest.mock import MagicMock
+
+        from parapilot.engine.camera import apply_camera
+
+        renderer = MagicMock()
+        camera = MagicMock()
+        renderer.GetActiveCamera.return_value = camera
+
+        config = CameraConfig(
+            position=(0.0, 0.0, 10.0),
+            focal_point=(0.0, 0.0, 0.0),
+            view_up=(0.0, 1.0, 0.0),
+            parallel_projection=True,
+            parallel_scale=5.0,
+        )
+        apply_camera(renderer, config)
+
+        camera.SetParallelProjection.assert_called_once_with(True)
+        camera.SetParallelScale.assert_called_once_with(5.0)
+
+    def test_apply_parallel_without_scale(self):
+        """apply_camera with parallel projection but no scale."""
+        from unittest.mock import MagicMock
+
+        from parapilot.engine.camera import apply_camera
+
+        renderer = MagicMock()
+        camera = MagicMock()
+        renderer.GetActiveCamera.return_value = camera
+
+        config = CameraConfig(
+            position=(0.0, 0.0, 10.0),
+            focal_point=(0.0, 0.0, 0.0),
+            view_up=(0.0, 1.0, 0.0),
+            parallel_projection=True,
+            parallel_scale=None,
+        )
+        apply_camera(renderer, config)
+
+        camera.SetParallelProjection.assert_called_once_with(True)
+        camera.SetParallelScale.assert_not_called()

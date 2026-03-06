@@ -72,3 +72,37 @@ class TestApplyLighting:
     def test_publication_has_two_lights(self, renderer):
         apply_lighting(renderer, "publication")
         assert renderer.GetLights().GetNumberOfItems() == 2
+
+    def test_positional_light(self, renderer):
+        """Cover positional light type branch (lines 108-113)."""
+        from parapilot.engine.lighting import LightingPreset
+
+        # Temporarily add a positional-light preset
+        LIGHTING_PRESETS["_test_spot"] = LightingPreset(
+            "_test_spot",
+            (
+                LightDef("positional", (5.0, 5.0, 5.0), (1.0, 1.0, 1.0), 1.0, 30.0),
+            ),
+        )
+        try:
+            apply_lighting(renderer, "_test_spot")
+            lights = renderer.GetLights()
+            assert lights.GetNumberOfItems() == 1
+        finally:
+            del LIGHTING_PRESETS["_test_spot"]
+
+    def test_positional_light_no_cone(self, renderer):
+        """Positional light with cone_angle=0 skips SetConeAngle."""
+        from parapilot.engine.lighting import LightingPreset
+
+        LIGHTING_PRESETS["_test_pos_nocone"] = LightingPreset(
+            "_test_pos_nocone",
+            (
+                LightDef("positional", (3.0, 3.0, 3.0), (1.0, 1.0, 1.0), 0.8, 0.0),
+            ),
+        )
+        try:
+            apply_lighting(renderer, "_test_pos_nocone")
+            assert renderer.GetLights().GetNumberOfItems() == 1
+        finally:
+            del LIGHTING_PRESETS["_test_pos_nocone"]

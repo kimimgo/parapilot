@@ -398,7 +398,11 @@ from parapilot.engine.physics import (  # noqa: E402
     _auto_seed_line,
     _auto_warp_scale,
     _diagonal,
+    _ensure_dataset,
+    _find_array,
+    _first_array_name,
     _is_2d_dataset,
+    _largest_leaf,
     recommend_techniques,
     smart_defaults,
     smart_representation,
@@ -546,3 +550,274 @@ class TestInternalHelpersVTK:
     def test_auto_warp_missing_field(self):
         grid = _make_3d_grid()
         assert _auto_warp_scale(grid, "missing") == 1.0
+
+
+class TestAnalyzeCameraLineLike:
+    """Cover line 237: 1D line-like geometry (2+ flat axes)."""
+
+    def test_1d_line_like_bounds(self):
+        # Flat in Y and Z → line along X
+        bounds = (0.0, 10.0, 0.0, 0.0, 0.0, 0.0)
+        cam = analyze_camera(bounds)
+        assert cam.preset == "front"
+        assert "1D" in cam.reason
+
+
+class TestEnsureDatasetMultiBlock:
+    """Cover lines 604-606, 610-625."""
+
+    def test_multiblock_returns_largest_leaf(self):
+        mb = vtk.vtkMultiBlockDataSet()
+        # Small block
+        small = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        pts.InsertNextPoint(0, 0, 0)
+        small.SetPoints(pts)
+        cell_ids = vtk.vtkIdList()
+        cell_ids.InsertNextId(0)
+        small.InsertNextCell(vtk.VTK_VERTEX, cell_ids)
+        mb.SetBlock(0, small)
+
+        # Larger block
+        large = _make_3d_grid()
+        mb.SetBlock(1, large)
+
+        result = _ensure_dataset(mb)
+        assert result.GetNumberOfCells() == large.GetNumberOfCells()
+
+    def test_multiblock_nested(self):
+        outer = vtk.vtkMultiBlockDataSet()
+        inner = vtk.vtkMultiBlockDataSet()
+        grid = _make_3d_grid()
+        inner.SetBlock(0, grid)
+        outer.SetBlock(0, inner)
+        result = _ensure_dataset(outer)
+        assert result is grid
+
+    def test_multiblock_with_none_block(self):
+        mb = vtk.vtkMultiBlockDataSet()
+        mb.SetBlock(0, None)
+        grid = _make_3d_grid()
+        mb.SetBlock(1, grid)
+        result = _largest_leaf(mb)
+        assert result is grid
+
+    def test_ensure_dataset_unknown_type(self):
+        # Non-DataSet, non-MultiBlock → None
+        table = vtk.vtkTable()
+        result = _ensure_dataset(table)
+        assert result is None
+
+
+class TestFirstArrayNameCellData:
+    """Cover lines 636-638: cell data branch of _first_array_name."""
+
+    def test_cell_data_only(self):
+        grid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        for i in range(4):
+            pts.InsertNextPoint(i, 0, 0)
+        grid.SetPoints(pts)
+
+        cell = vtk.vtkTetra()
+        for i in range(4):
+            cell.GetPointIds().SetId(i, i)
+        grid.InsertNextCell(cell.GetCellType(), cell.GetPointIds())
+
+        arr = vtk.vtkFloatArray()
+        arr.SetName("cell_temp")
+        arr.SetNumberOfTuples(1)
+        arr.SetValue(0, 42.0)
+        grid.GetCellData().AddArray(arr)
+
+        name = _first_array_name(grid)
+        assert name == "cell_temp"
+
+
+class TestFindArrayCellData:
+    """Cover lines 650-652: cell data branch of _find_array."""
+
+    def test_finds_cell_array(self):
+        grid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        for i in range(4):
+            pts.InsertNextPoint(i, 0, 0)
+        grid.SetPoints(pts)
+
+        cell = vtk.vtkTetra()
+        for i in range(4):
+            cell.GetPointIds().SetId(i, i)
+        grid.InsertNextCell(cell.GetCellType(), cell.GetPointIds())
+
+        arr = vtk.vtkFloatArray()
+        arr.SetName("sigma")
+        arr.SetNumberOfTuples(1)
+        arr.SetValue(0, 99.0)
+        grid.GetCellData().AddArray(arr)
+
+        result, assoc = _find_array(grid, "sigma")
+        assert result is not None
+        assert assoc == "cell"
+
+
+class TestIs2dDegenerate:
+    """Cover line 596: degenerate bounds (diag < 1e-30)."""
+
+    def test_all_zero_bounds(self):
+        assert _is_2d_dataset((0, 0, 0, 0, 0, 0)) is False
+
+
+class TestAutoWarpScaleEdgeCases:
+    """Cover lines 696, 701."""
+
+    def test_zero_displacement(self):
+        """Zero max displacement → scale = 1.0."""
+        grid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        for i in range(4):
+            pts.InsertNextPoint(i, 0, 0)
+        grid.SetPoints(pts)
+        arr = vtk.vtkFloatArray()
+        arr.SetName("disp")
+        arr.SetNumberOfComponents(3)
+        arr.SetNumberOfTuples(4)
+        for i in range(4):
+            arr.SetTuple3(i, 0.0, 0.0, 0.0)
+        grid.GetPointData().AddArray(arr)
+        assert _auto_warp_scale(grid, "disp") == 1.0
+
+    def test_zero_diagonal(self):
+        """Single point → diag near zero → scale = 1.0."""
+        grid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        pts.InsertNextPoint(0, 0, 0)
+        grid.SetPoints(pts)
+        arr = vtk.vtkFloatArray()
+        arr.SetName("disp")
+        arr.SetNumberOfComponents(3)
+        arr.SetNumberOfTuples(1)
+        arr.SetTuple3(0, 1.0, 0.0, 0.0)
+        grid.GetPointData().AddArray(arr)
+        assert _auto_warp_scale(grid, "disp") == 1.0
+
+
+class TestSmartRepresentationEdgeCases:
+    """Cover lines 318, 326, 333, 348."""
+
+    def test_none_dataset_returns_default(self):
+        """None from _ensure_dataset → default representation."""
+        table = vtk.vtkTable()
+        rep = smart_representation(table)
+        assert rep.primary == "surface"
+
+    def test_surface_with_edges_physics(self):
+        """Physics with surface_with_edges → edges on."""
+        from parapilot.engine.physics import PhysicsType
+        grid = _make_3d_grid()
+        physics = PhysicsType(
+            name="stress", category="scalar", colormap="turbo",
+            diverging=False, log_scale=False, camera_2d="top", camera_3d="isometric",
+            representation="surface_with_edges", warp=False, streamlines=False,
+        )
+        rep = smart_representation(grid, physics)
+        assert rep.edge_visibility is True
+
+    def test_large_point_cloud_gaussian(self):
+        """Point-only with >50k points → point_gaussian."""
+        grid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        for i in range(60000):
+            pts.InsertNextPoint(float(i % 100), float(i // 100), 0.0)
+        grid.SetPoints(pts)
+        rep = smart_representation(grid)
+        assert rep.primary == "point_gaussian"
+
+    def test_auto_point_size_single_point(self):
+        """Single point → default size 5.0."""
+        grid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        pts.InsertNextPoint(0, 0, 0)
+        grid.SetPoints(pts)
+        from parapilot.engine.physics import _auto_point_size
+        assert _auto_point_size(grid) == 5.0
+
+
+class TestSmartDefaultsCrossZero:
+    """Cover line 552: zero-crossing override to coolwarm."""
+
+    def test_zero_crossing_non_diverging(self):
+        grid = _make_3d_grid()
+        # Create a non-diverging field with zero-crossing range
+        arr = vtk.vtkFloatArray()
+        arr.SetName("custom_field")
+        arr.SetNumberOfTuples(4)
+        for i in range(4):
+            arr.SetValue(i, float(i) - 1.5)  # -1.5, -0.5, 0.5, 1.5
+        grid.GetPointData().AddArray(arr)
+        sd = smart_defaults(grid, "custom_field")
+        # custom_field is unknown → not diverging → zero-crossing → coolwarm
+        assert sd.colormap == "coolwarm"
+
+    def test_smart_defaults_none_dataset(self):
+        """Cover line 518: non-DataSet → fallback SmartDefaults."""
+        table = vtk.vtkTable()
+        sd = smart_defaults(table)
+        assert sd.physics.name == "unknown_scalar"
+        assert sd.camera.preset == "isometric"
+
+
+class TestRecommendTechniquesNoneDataset:
+    """Cover line 388: non-DataSet → empty list."""
+
+    def test_returns_empty_for_table(self):
+        table = vtk.vtkTable()
+        result = recommend_techniques(table, "p")
+        assert result == []
+
+
+class TestRecommendTechniquesPhysicsOverride:
+    """Cover line 388, 432-433: warp technique."""
+
+    def test_displacement_gets_warp(self):
+        grid = _make_3d_grid()
+        # displacement → warp technique
+        u = vtk.vtkFloatArray()
+        u.SetName("displacement")
+        u.SetNumberOfComponents(3)
+        u.SetNumberOfTuples(4)
+        for i in range(4):
+            u.SetTuple3(i, float(i) * 0.01, 0.0, 0.0)
+        grid.GetPointData().AddArray(u)
+        techniques = recommend_techniques(grid, "displacement")
+        names = [t.technique for t in techniques]
+        assert "warp" in names
+
+
+class TestRecommendTechniques2DContour:
+    """Cover lines 471-477: contour lines for 2D scalar."""
+
+    def test_2d_scalar_gets_contour_lines(self):
+        # Create 2D grid (flat in Z)
+        grid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        pts.InsertNextPoint(0, 0, 0)
+        pts.InsertNextPoint(10, 0, 0)
+        pts.InsertNextPoint(10, 10, 0)
+        pts.InsertNextPoint(0, 10, 0)
+        grid.SetPoints(pts)
+
+        cell = vtk.vtkQuad()
+        for i in range(4):
+            cell.GetPointIds().SetId(i, i)
+        grid.InsertNextCell(cell.GetCellType(), cell.GetPointIds())
+
+        arr = vtk.vtkFloatArray()
+        arr.SetName("T")
+        arr.SetNumberOfTuples(4)
+        for i in range(4):
+            arr.SetValue(i, float(i) * 100.0)
+        grid.GetPointData().AddArray(arr)
+
+        techniques = recommend_techniques(grid, "T")
+        names = [t.technique for t in techniques]
+        assert "contour_lines" in names
