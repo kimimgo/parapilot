@@ -1,48 +1,43 @@
 # Security Policy
 
-## Reporting a Vulnerability
-
-If you discover a security vulnerability in parapilot, please report it responsibly.
-
-**Do NOT open a public GitHub issue for security vulnerabilities.**
-
-### How to Report
-
-1. **GitHub Private Vulnerability Reporting** (preferred):
-   Go to [Security Advisories](https://github.com/kimimgo/parapilot/security/advisories/new) and create a new advisory.
-
-2. **Email**: Send details to [kimimgo@gmail.com](mailto:kimimgo@gmail.com)
-
-### What to Include
-
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Suggested fix (if any)
-
-### Response Timeline
-
-| Action | Timeline |
-|--------|----------|
-| Acknowledgment | Within 48 hours |
-| Initial assessment | Within 5 business days |
-| Patch release | Within 7 days of confirmation |
-
-### Disclosure Policy
-
-- Security issues are disclosed **after** a patch is released
-- Credit is given to reporters (unless anonymity is requested)
-
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 0.1.x   | Yes       |
+| Version | Supported          |
+|---------|--------------------|
+| 0.3.x   | Yes                |
+| < 0.3   | No                 |
+
+## Reporting a Vulnerability
+
+If you discover a security vulnerability in parapilot, please report it responsibly:
+
+1. **Do NOT open a public issue.**
+2. Email **kimimgo@gmail.com** with:
+   - Description of the vulnerability
+   - Steps to reproduce
+   - Potential impact
+3. You will receive an acknowledgment within **48 hours**.
+4. A fix will be developed and released within **7 days** for critical issues.
+
+## Security Measures
+
+- **Path traversal prevention**: `PARAPILOT_DATA_DIR` restricts file access to a configured directory
+- **Dependency auditing**: `pip-audit` runs weekly via CI and on every PR
+- **Static analysis**: CodeQL scans on every push and weekly schedule
+- **Dependency review**: License and vulnerability checks on all PRs
+- **No arbitrary code execution**: Pipeline DSL compiles to VTK API calls only
 
 ## Scope
 
-The following are in scope:
-- Path traversal via `PARAPILOT_DATA_DIR`
-- MCP protocol injection
-- Arbitrary code execution via pipeline DSL
-- Dependencies with known CVEs
+The following are in scope for security reports:
+
+- Path traversal bypasses in `_validate_file_path`
+- Arbitrary file read/write outside `PARAPILOT_DATA_DIR`
+- Denial of service via crafted input files
+- Dependency vulnerabilities in production dependencies
+
+Out of scope:
+
+- Issues in development-only dependencies
+- Issues requiring physical access to the server
+- Social engineering attacks

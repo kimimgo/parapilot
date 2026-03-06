@@ -27,3 +27,4 @@ build/
 www/.claude/
 firebase-debug.log
 scripts/launch/logs/
+.hypothesis/
