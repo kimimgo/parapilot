@@ -153,9 +153,9 @@ class TestMainVersionFlag:
         """server.py if __name__ == '__main__' guard should call main()."""
         from unittest.mock import patch
 
-        with patch("parapilot.server.main") as mock_main:
-            import parapilot.server
+        import parapilot.server  # noqa: F811
 
+        with patch("parapilot.server.main") as mock_main:
             # Simulate __name__ == "__main__" by executing the guard
-            exec("if True: parapilot.server.main()")  # noqa: S102
+            parapilot.server.main()
             mock_main.assert_called()

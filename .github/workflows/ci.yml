@@ -58,6 +58,16 @@ jobs:
         if: matrix.python-version == '3.12'
         run: coverage report --fail-under=80
 
+      - name: Test count regression guard
+        if: matrix.python-version == '3.12'
+        run: |
+          COUNT=$(pytest --co -q 2>/dev/null | tail -1 | grep -oP '\d+')
+          echo "Collected $COUNT tests"
+          if [ "$COUNT" -lt 1100 ]; then
+            echo "::error::Test count regression: $COUNT < 1100 (expected >= 1100)"
+            exit 1
+          fi
+
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.12' && !cancelled()
         uses: codecov/codecov-action@v5
