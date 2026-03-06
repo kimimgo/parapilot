@@ -604,4 +604,32 @@ class TestMain:
                 transport="streamable-http", host="0.0.0.0", port=8000
             )
 
+    def test_main_cleanup_logs_removed(self):
+        """main() logs when orphaned containers are removed (line 979)."""
+        import parapilot.server as srv_mod
+        with patch("sys.argv", ["mcp-server-parapilot"]), \
+             patch("parapilot.server._protect_stdout"), \
+             patch("parapilot.server._register_resources"), \
+             patch("parapilot.server._register_prompts"), \
+             patch("parapilot.server.mcp"), \
+             patch("parapilot.core.runner.VTKRunner") as mock_runner_cls, \
+             patch.object(srv_mod, "logger") as mock_logger:
+            mock_runner_cls.cleanup_orphaned_containers = AsyncMock(return_value=3)
+            srv_mod.main()
+            mock_logger.info.assert_any_call(
+                "cleaned up %d orphaned container(s)", 3
+            )
+
+    def test_main_cleanup_runtime_error(self):
+        """main() handles RuntimeError from event loop (lines 980-982)."""
+        import asyncio as real_asyncio
+        with patch("sys.argv", ["mcp-server-parapilot"]), \
+             patch("parapilot.server._protect_stdout"), \
+             patch("parapilot.server._register_resources"), \
+             patch("parapilot.server._register_prompts"), \
+             patch("parapilot.server.mcp"), \
+             patch.object(real_asyncio, "new_event_loop", side_effect=RuntimeError("no event loop")):
+            from parapilot.server import main
+            main()  # Should not raise
+
 

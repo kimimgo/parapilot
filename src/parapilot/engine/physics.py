@@ -546,10 +546,7 @@ def smart_defaults(
     # Smart representation
     rep = smart_representation(dataset, physics)
 
-    # Colormap override for zero-crossing
     colormap = physics.colormap
-    if data_range is not None and data_range[0] < 0 < data_range[1] and not physics.diverging:
-        colormap = "coolwarm"
 
     # Techniques
     techniques: list[VisualizationTechnique] = []
