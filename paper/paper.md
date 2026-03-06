@@ -56,7 +56,7 @@ testing.
    and dataset geometry.
 3. **A pipeline DSL** for composing multi-step filter chains as
    declarative JSON, enabling reproducible visualization workflows.
-4. **Comprehensive testing** with 828 automated tests covering 83% of
+4. **Comprehensive testing** with 828 automated tests covering 84% of
    the codebase.
 
 # Architecture
