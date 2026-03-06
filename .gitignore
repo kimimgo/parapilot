@@ -10,6 +10,7 @@ build/
 !www/public/showcase/*.png
 !www/public/showcase/*.webp
 !www/public/og-image.png
+!assets/social-preview.png
 *.mp4
 !www/public/showcase/*.mp4
 *.gif
