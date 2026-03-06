@@ -1,5 +1,7 @@
 # parapilot
 
+[English](README.md) | [한국어](README.ko.md)
+
 [![CI](https://github.com/kimimgo/parapilot/actions/workflows/ci.yml/badge.svg)](https://github.com/kimimgo/parapilot/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/kimimgo/parapilot/branch/main/graph/badge.svg)](https://codecov.io/gh/kimimgo/parapilot)
 [![PyPI](https://img.shields.io/pypi/v/mcp-server-parapilot)](https://pypi.org/project/mcp-server-parapilot/)
