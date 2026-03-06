@@ -1,3 +1,5 @@
+[English](README.md) | [한국어](README.ko.md)
+
 # parapilot
 
 [![CI](https://github.com/kimimgo/parapilot/actions/workflows/ci.yml/badge.svg)](https://github.com/kimimgo/parapilot/actions/workflows/ci.yml)
