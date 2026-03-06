@@ -55,7 +55,7 @@ async def cinematic_render_impl(
         rc = RenderConfig(
             colormap=colormap.lower(),
             array_name=field_name,
-            scalar_range=tuple(scalar_range) if scalar_range else None,
+            scalar_range=(float(scalar_range[0]), float(scalar_range[1])) if scalar_range else None,
         )
 
         if width is not None:

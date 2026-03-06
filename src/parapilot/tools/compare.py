@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from parapilot.core.runner import VTKRunner
 
 
@@ -68,7 +70,7 @@ async def compare_impl(
             height=h,
             colormap=colormap.lower(),
             array_name=field_name,
-            scalar_range=tuple(shared_range) if shared_range else None,
+            scalar_range=(float(shared_range[0]), float(shared_range[1])) if shared_range else None,
         )
 
         config = CinematicConfig(
@@ -85,7 +87,7 @@ async def compare_impl(
         if mode == "side_by_side":
             return _compose_side_by_side(png_a, png_b, label_a, label_b, half_w, h)
         elif mode == "diff":
-            return _compose_diff(data_a, data_b, field_name, config)
+            return bytes(_compose_diff(data_a, data_b, field_name or "", config))
         else:
             return _compose_side_by_side(png_a, png_b, label_a, label_b, half_w, h)
 
@@ -116,7 +118,7 @@ def _compose_side_by_side(
     try:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
     except OSError:
-        font = ImageFont.load_default()
+        font = ImageFont.load_default()  # type: ignore[assignment]
 
     # White text with dark outline for visibility
     for label, x_offset in [(label_a, 20), (label_b, half_w + 20)]:
@@ -132,7 +134,7 @@ def _compose_side_by_side(
     return buf.getvalue()
 
 
-def _compose_diff(data_a, data_b, field_name, config):
+def _compose_diff(data_a: Any, data_b: Any, field_name: str, config: Any) -> bytes:
     """Compute and render field difference between two datasets."""
     import numpy as np
     import vtk

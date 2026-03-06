@@ -86,12 +86,13 @@ def _catmull_rom(
     """
     t2 = t * t
     t3 = t2 * t
-    return 0.5 * (
+    result = 0.5 * (
         (2.0 * p1) +
         (-p0 + p2) * t +
         (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
         (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3
     )
+    return result  # type: ignore[no-any-return]
 
 
 def interpolate_path(
@@ -168,10 +169,13 @@ def interpolate_path(
         if up_norm > 1e-8:
             up = up / up_norm
 
+        pos_t: tuple[float, float, float] = (float(pos[0]), float(pos[1]), float(pos[2]))
+        foc_t: tuple[float, float, float] = (float(foc[0]), float(foc[1]), float(foc[2]))
+        up_t: tuple[float, float, float] = (float(up[0]), float(up[1]), float(up[2]))
         result.append(CameraKeyframe(
-            position=tuple(float(x) for x in pos),
-            focal_point=tuple(float(x) for x in foc),
-            view_up=tuple(float(x) for x in up),
+            position=pos_t,
+            focal_point=foc_t,
+            view_up=up_t,
             t=global_t,
         ))
 

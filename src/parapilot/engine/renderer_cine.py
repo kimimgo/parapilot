@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from math import sqrt
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from parapilot.engine.renderer import (
     RenderConfig,
@@ -70,7 +70,7 @@ class CinematicConfig:
 
 
 # Quality presets
-QUALITY_PRESETS: dict[str, dict] = {
+QUALITY_PRESETS: dict[str, dict[str, Any]] = {
     "draft": {
         "width": 960, "height": 540,
         "ssao": False, "fxaa": False,

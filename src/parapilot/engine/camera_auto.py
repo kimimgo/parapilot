@@ -67,7 +67,8 @@ def analyze_shape(
         ShapeAnalysis with eigenvalues, eigenvectors, center, classification.
     """
     if points.shape[0] < 3:
-        center = tuple(float(x) for x in points.mean(axis=0))
+        _m = points.mean(axis=0)
+        center: tuple[float, float, float] = (float(_m[0]), float(_m[1]), float(_m[2]))
         return ShapeAnalysis(
             eigvals=(1.0, 1.0, 1.0),
             eigvecs=np.eye(3),
@@ -90,8 +91,8 @@ def analyze_shape(
     eigvecs_sorted = eigvecs[:, idx]
 
     shape, flat_ratio, elongation = _classify_shape(eigvals_sorted)
-    center = tuple(float(x) for x in center_arr)
-    ev = tuple(float(x) for x in eigvals_sorted)
+    center = (float(center_arr[0]), float(center_arr[1]), float(center_arr[2]))
+    ev: tuple[float, float, float] = (float(eigvals_sorted[0]), float(eigvals_sorted[1]), float(eigvals_sorted[2]))
 
     return ShapeAnalysis(
         eigvals=ev,
@@ -227,7 +228,7 @@ def _compute_frustum_distance(
     half_fov_h = math.atan(math.tan(half_fov_v) * aspect_ratio)
     dist_from_width = half_w / math.tan(half_fov_h)
 
-    return max(dist_from_height, dist_from_width)
+    return float(max(dist_from_height, dist_from_width))
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +236,7 @@ def _compute_frustum_distance(
 # ---------------------------------------------------------------------------
 
 def _resolve_view_up(
-    view_dir: np.ndarray, preferred_up: np.ndarray = None
+    view_dir: np.ndarray, preferred_up: np.ndarray | None = None
 ) -> tuple[float, float, float]:
     """Determine a valid view-up vector that isn't parallel to view direction."""
     if preferred_up is None:
@@ -246,7 +247,7 @@ def _resolve_view_up(
         # View direction is nearly parallel to Z — fall back to Y-up
         preferred_up = np.array([0.0, 1.0, 0.0])
 
-    return tuple(float(x) for x in preferred_up)
+    return (float(preferred_up[0]), float(preferred_up[1]), float(preferred_up[2]))
 
 
 # ---------------------------------------------------------------------------
@@ -289,7 +290,7 @@ def extract_surface_points(dataset: vtk.vtkDataObject, max_points: int = 50000) 
         indices = np.linspace(0, n - 1, max_points, dtype=int)
         points = points[indices]
 
-    return points.astype(np.float64)
+    return points.astype(np.float64)  # type: ignore[no-any-return]
 
 
 def auto_camera(
@@ -356,7 +357,7 @@ def auto_camera(
 
     # Camera position
     position = center + view_dir * distance
-    position_t = tuple(float(x) for x in position)
+    position_t: tuple[float, float, float] = (float(position[0]), float(position[1]), float(position[2]))
 
     # Parallel scale for orthographic
     parallel_scale = None
@@ -418,7 +419,7 @@ def auto_camera_from_bounds(
     distance /= zoom
 
     position = center + view_dir * distance
-    position_t = tuple(float(x) for x in position)
+    position_t: tuple[float, float, float] = (float(position[0]), float(position[1]), float(position[2]))
 
     parallel_scale = None
     if orthographic:
