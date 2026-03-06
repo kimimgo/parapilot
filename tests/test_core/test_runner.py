@@ -249,6 +249,170 @@ class TestStdoutProtection:
             sys.stdout = orig_stdout
 
 
+class TestDetectMode:
+    def test_docker_mode_when_python_not_found(self):
+        """_detect_mode returns 'docker' when python_bin not on PATH."""
+        with patch("shutil.which", return_value=None):
+            runner = VTKRunner(mode="auto")
+            assert runner.mode == "docker"
+
+    def test_local_mode_when_python_found(self):
+        """_detect_mode returns 'local' when python_bin is on PATH."""
+        with patch("shutil.which", return_value="/usr/bin/python3"):
+            runner = VTKRunner(mode="auto")
+            assert runner.mode == "local"
+
+
+class TestExecuteLocalEdgeCases:
+    @pytest.mark.asyncio
+    async def test_extra_files_written(self):
+        """execute writes extra_files to tmpdir before running script."""
+        runner = VTKRunner(mode="local")
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate = AsyncMock(return_value=(b"", b""))
+        mock_proc.returncode = 0
+
+        written_files = {}
+
+        async def capture_subprocess(*args, **kwargs):
+            import pathlib
+            script_path = pathlib.Path(args[1])
+            extra_file = script_path.parent / "data.json"
+            if extra_file.exists():
+                written_files["data.json"] = extra_file.read_bytes()
+            return mock_proc
+
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            side_effect=capture_subprocess,
+        ):
+            result = await runner.execute(
+                "pass",
+                extra_files={"data.json": b'{"key": "value"}'},
+            )
+        assert result.exit_code == 0
+        assert written_files.get("data.json") == b'{"key": "value"}'
+
+    @pytest.mark.asyncio
+    async def test_json_parsed_from_stdout(self):
+        """execute parses JSON from stdout when no result.json file."""
+        runner = VTKRunner(mode="local")
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate = AsyncMock(
+            return_value=(b'{"status": "ok", "count": 42}', b"")
+        )
+        mock_proc.returncode = 0
+
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ):
+            result = await runner.execute("pass")
+        assert result.json_result == {"status": "ok", "count": 42}
+
+    @pytest.mark.asyncio
+    async def test_json_parse_failure_ignored(self):
+        """execute ignores malformed JSON in stdout."""
+        runner = VTKRunner(mode="local")
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate = AsyncMock(
+            return_value=(b'{invalid json', b"")
+        )
+        mock_proc.returncode = 0
+
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ):
+            result = await runner.execute("pass")
+        assert result.json_result is None
+
+    @pytest.mark.asyncio
+    async def test_local_timeout_handling(self):
+        """execute handles local script timeout gracefully."""
+        runner = VTKRunner(mode="local")
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate = AsyncMock(
+            side_effect=[asyncio.TimeoutError, (b"", b"")]
+        )
+        mock_proc.kill = MagicMock()
+
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ):
+            result = await runner.execute("pass", timeout=1.0)
+        assert result.exit_code == -1
+        assert "timed out" in result.stderr
+        mock_proc.kill.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_osmesa_backend_env(self):
+        """OSMesa backend sets correct env var."""
+        from parapilot.config import PVConfig
+
+        config = PVConfig(vtk_backend="osmesa", render_backend="cpu")
+        runner = VTKRunner(mode="local", config=config)
+
+        captured_env = {}
+
+        async def capture_subprocess(*args, **kwargs):
+            captured_env.update(kwargs.get("env", {}))
+            mock_proc = AsyncMock()
+            mock_proc.communicate = AsyncMock(return_value=(b"", b""))
+            mock_proc.returncode = 0
+            return mock_proc
+
+        with patch(
+            "parapilot.core.runner.asyncio.create_subprocess_exec",
+            side_effect=capture_subprocess,
+        ):
+            await runner.execute("pass")
+        assert captured_env.get("VTK_DEFAULT_OPENGL_WINDOW") == "vtkOSOpenGLRenderWindow"
+
+
+class TestDockerModeNoGPU:
+    @pytest.mark.asyncio
+    async def test_docker_no_gpu_env(self):
+        """Docker mode without GPU sets OSMesa env."""
+        from pathlib import Path
+
+        from parapilot.config import PVConfig
+
+        config = PVConfig(data_dir=Path("/data"), render_backend="cpu")
+        runner = VTKRunner(mode="docker", config=config)
+
+        captured_args: list[str] = []
+
+        async def fake_subprocess(*args, **_kw):
+            captured_args.extend(args)
+            mock_proc = AsyncMock()
+            mock_proc.communicate = AsyncMock(return_value=(b"", b""))
+            mock_proc.returncode = 0
+            return mock_proc
+
+        with (
+            patch("parapilot.core.runner.asyncio.create_subprocess_exec", side_effect=fake_subprocess),
+            patch("parapilot.core.runner.uuid") as mock_uuid,
+        ):
+            mock_uuid.uuid4.return_value = MagicMock(hex="abcdef123456")
+            import tempfile
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                script = Path(tmpdir) / "pipeline.py"
+                script.write_text("pass")
+                output_dir = Path(tmpdir) / "output"
+                output_dir.mkdir()
+                await runner._run_docker(script, output_dir, timeout=10.0)
+
+        assert "--gpus" not in captured_args
+        assert "VTK_DEFAULT_OPENGL_WINDOW=vtkOSOpenGLRenderWindow" in captured_args
+
+
 class TestDefaultTimeout:
     """RC3: Default timeout should be 600s."""
 
