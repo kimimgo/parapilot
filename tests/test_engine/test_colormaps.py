@@ -24,7 +24,8 @@ class TestListColormaps:
 
     def test_includes_core_presets(self):
         result = list_colormaps()
-        for name in ("viridis", "cool to warm", "plasma", "inferno", "jet"):
+        for name in ("viridis", "cool to warm", "plasma", "inferno", "jet",
+                      "magma", "cividis", "twilight"):
             assert name in result
 
     def test_no_duplicates(self):

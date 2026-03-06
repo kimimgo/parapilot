@@ -418,6 +418,9 @@ COLORMAP_GUIDE: dict[str, dict[str, str]] = {
     "Black-Body Radiation": {"type": "sequential", "use": "Temperature (publication)"},
     "Grayscale": {"type": "sequential", "use": "Printing, mesh overlay"},
     "X Ray": {"type": "sequential", "use": "Density, opacity visualization"},
+    "Magma": {"type": "sequential", "use": "Heat maps, similar to inferno but softer"},
+    "Cividis": {"type": "sequential", "use": "Colorblind-safe, optimized for CVD viewers"},
+    "Twilight": {"type": "cyclic", "use": "Phase, angle, cyclic data (wraps at endpoints)"},
 }
 
 # ---------------------------------------------------------------------------
