@@ -241,6 +241,41 @@ class TestCompareImplMocked:
                 assert call[1].get("timestep") == 3.14 or call == mock_read.call_args_list[0]
 
 
+class TestComposeSideBySideFontFallback:
+    """Test font fallback in _compose_side_by_side (no VTK needed)."""
+
+    def test_font_oserror_fallback(self):
+        """Side-by-side compose works even when truetype font not found."""
+        # Create fake PNG images
+        import io
+
+        from PIL import Image, ImageFont
+
+        from parapilot.tools.compare import _compose_side_by_side
+
+        def make_png(w, h, color):
+            img = Image.new("RGB", (w, h), color)
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            return buf.getvalue()
+
+        png_a = make_png(200, 150, "red")
+        png_b = make_png(200, 150, "blue")
+
+        orig = ImageFont.truetype
+
+        def fail_dejavu(font=None, size=10, *a, **kw):
+            if font and "DejaVuSans" in str(font):
+                raise OSError("font not found")
+            return orig(font, size, *a, **kw)
+
+        with patch.object(ImageFont, "truetype", side_effect=fail_dejavu):
+            result = _compose_side_by_side(png_a, png_b, "A", "B", 200, 150)
+
+        assert result[:4] == b"\x89PNG"
+        assert len(result) > 100
+
+
 def _make_grid_with_array(name: str = "pressure", n_points: int = 4) -> vtk.vtkUnstructuredGrid:
     """Create a simple grid with a point array for diff testing."""
     grid = vtk.vtkUnstructuredGrid()
