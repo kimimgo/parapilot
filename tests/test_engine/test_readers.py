@@ -1105,3 +1105,133 @@ class TestDataReaderRealVTK:
         reader = DataReader(vtk_path)
         data = reader.read()
         assert data.GetNumberOfPoints() > 0
+
+
+class TestReaderEdgeCases:
+    """Cover edge-case branches in DataReader._create_reader."""
+
+    def _make_mock_vtk(self, **overrides):
+        """Create a mock VTK module for sys.modules replacement."""
+        import vtk as real_vtk
+
+        mock_vtk = MagicMock(spec=real_vtk)
+        mock_vtk.vtkMultiBlockDataSet = real_vtk.vtkMultiBlockDataSet
+        for k, v in overrides.items():
+            setattr(mock_vtk, k, v)
+        return mock_vtk
+
+    def test_vtk_class_not_available_raises_runtime_error(self, tmp_path):
+        """L210-211: RuntimeError when VTK class is missing from build."""
+        import sys
+
+        from parapilot.engine.readers import DataReader
+
+        vtk_file = tmp_path / "test.vti"
+        vtk_file.touch()
+        reader = DataReader(vtk_file)
+
+        mock_vtk = self._make_mock_vtk()
+        # Remove the expected class so getattr returns None
+        mock_vtk.vtkXMLImageDataReader = None
+
+        original = sys.modules["vtk"]
+        try:
+            sys.modules["vtk"] = mock_vtk
+            with pytest.raises(RuntimeError, match="not available"):
+                reader._create_reader()
+        finally:
+            sys.modules["vtk"] = original
+
+    def test_ensight_reader_uses_set_case_filename(self, tmp_path):
+        """L216: EnSight reader calls SetCaseFileName instead of SetFileName."""
+        import sys
+
+        from parapilot.engine.readers import DataReader
+
+        case_file = tmp_path / "test.case"
+        case_file.touch()
+        reader = DataReader(case_file)
+
+        mock_reader_instance = MagicMock()
+        mock_reader_instance.GetOutput.return_value = MagicMock()  # not vtkMultiBlockDataSet
+        mock_reader_class = MagicMock(return_value=mock_reader_instance)
+
+        mock_vtk = self._make_mock_vtk(vtkGenericEnSightReader=mock_reader_class)
+
+        original = sys.modules["vtk"]
+        try:
+            sys.modules["vtk"] = mock_vtk
+            reader._create_reader()
+        finally:
+            sys.modules["vtk"] = original
+
+        mock_reader_instance.SetCaseFileName.assert_called_once()
+        mock_reader_instance.Update.assert_called()
+
+    def test_openfoam_reader_calls_setup(self, tmp_path):
+        """L222+275-288: OpenFOAM reader calls _setup_openfoam with full config."""
+        import sys
+
+        from parapilot.engine.readers import DataReader
+
+        foam_file = tmp_path / "test.foam"
+        foam_file.touch()
+        reader = DataReader(foam_file)
+
+        mock_reader_instance = MagicMock()
+        mock_reader_instance.GetOutput.return_value = MagicMock()
+        mock_array_selection = MagicMock()
+        mock_array_selection.GetNumberOfArrays.return_value = 2
+        mock_array_selection.GetArrayName.side_effect = ["p", "U"]
+        mock_reader_instance.GetCellDataArraySelection.return_value = mock_array_selection
+        mock_reader_class = MagicMock(return_value=mock_reader_instance)
+
+        mock_vtk = self._make_mock_vtk(vtkOpenFOAMReader=mock_reader_class)
+
+        original = sys.modules["vtk"]
+        try:
+            sys.modules["vtk"] = mock_vtk
+            reader._create_reader()
+        finally:
+            sys.modules["vtk"] = original
+
+        # OpenFOAM-specific setup methods (L275-288)
+        mock_reader_instance.SetDecomposePolyhedra.assert_called_once_with(True)
+        mock_reader_instance.SetSkipZeroTime.assert_called_once_with(True)
+        mock_reader_instance.SetCreateCellToPoint.assert_called_once_with(True)
+        mock_reader_instance.EnableAllPatchArrays.assert_called_once()
+        assert mock_array_selection.EnableArray.call_count == 2
+
+    def test_set_timestep_via_executive(self, tmp_path):
+        """L350-355: Timestep selection via VTK executive pipeline."""
+        import sys
+
+        from parapilot.engine.readers import DataReader
+
+        vtk_file = tmp_path / "test.vti"
+        vtk_file.touch()
+        reader = DataReader(vtk_file)
+
+        mock_vtk_reader = MagicMock()
+        mock_out_info = MagicMock()
+        mock_vtk_reader.GetExecutive.return_value.GetOutputInformation.return_value = (
+            mock_out_info
+        )
+        reader._reader = mock_vtk_reader
+        reader._pvd_entries = []
+        reader._series_entries = []
+
+        mock_key = MagicMock()
+        mock_vtk = self._make_mock_vtk()
+        mock_vtk.vtkStreamingDemandDrivenPipeline.UPDATE_TIME_STEP.return_value = mock_key
+
+        original = sys.modules["vtk"]
+        try:
+            sys.modules["vtk"] = mock_vtk
+            reader._set_timestep(1.0)
+        finally:
+            sys.modules["vtk"] = original
+
+        mock_out_info.Set.assert_called_once_with(mock_key, 1.0)
+        mock_vtk_reader.Modified.assert_called_once()
+        mock_vtk_reader.Update.assert_called_once()

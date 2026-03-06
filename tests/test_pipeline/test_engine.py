@@ -734,6 +734,24 @@ class TestExecutePipeline:
         with pytest.raises(ValueError):
             await execute_split_animation(pipeline, mock_runner)
 
+    async def test_execute_split_animation_none_after_validation(self):
+        """L107: split_animation is None after validation passes (defensive guard)."""
+        from unittest.mock import MagicMock, patch
+
+        from parapilot.pipeline.engine import execute_split_animation
+
+        pipeline = PipelineDefinition(
+            source=SourceDef(file="/data/case.vtk"),
+            pipeline=[],
+            output=OutputDef(type="split_animation"),
+            # split_animation is None (no definition provided)
+        )
+        mock_runner = MagicMock()
+        # Bypass validation to reach L107
+        with patch("parapilot.pipeline.engine.validate_pipeline", return_value=[]):
+            with pytest.raises(ValueError, match="split_animation definition is required"):
+                await execute_split_animation(pipeline, mock_runner)
+
 
 class TestCompileVideoEdgeCases:
     """Additional compile_video edge cases for coverage."""
