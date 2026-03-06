@@ -316,6 +316,86 @@ class TestPreview3dImpl:
 
 
 # ---------------------------------------------------------------------------
+# slice_impl, streamlines_impl (zoom branch coverage)
+# ---------------------------------------------------------------------------
+
+class TestSliceImpl:
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.filters.execute_pipeline")
+    async def test_slice_with_zoom(self, mock_exec):
+        from parapilot.tools.filters import slice_impl
+
+        mock_exec.return_value = _mock_pipeline_result()
+        runner = MagicMock()
+
+        await slice_impl(
+            file_path="/data/case.vtk",
+            field_name="pressure",
+            runner=runner,
+            zoom=2.0,
+        )
+
+        pipeline_def = mock_exec.call_args[0][0]
+        assert pipeline_def.output.render.camera.zoom == 2.0
+
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.filters.execute_pipeline")
+    async def test_slice_basic(self, mock_exec):
+        from parapilot.tools.filters import slice_impl
+
+        mock_exec.return_value = _mock_pipeline_result()
+        runner = MagicMock()
+
+        await slice_impl(
+            file_path="/data/case.vtk",
+            field_name="pressure",
+            runner=runner,
+        )
+
+        pipeline_def = mock_exec.call_args[0][0]
+        assert pipeline_def.pipeline[0].filter == "Slice"
+        assert pipeline_def.output.render.field == "pressure"
+
+
+class TestStreamlinesImpl:
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.filters.execute_pipeline")
+    async def test_streamlines_with_zoom(self, mock_exec):
+        from parapilot.tools.filters import streamlines_impl
+
+        mock_exec.return_value = _mock_pipeline_result()
+        runner = MagicMock()
+
+        await streamlines_impl(
+            file_path="/data/case.vtk",
+            vector_field="velocity",
+            runner=runner,
+            zoom=1.5,
+        )
+
+        pipeline_def = mock_exec.call_args[0][0]
+        assert pipeline_def.output.render.camera.zoom == 1.5
+
+    @pytest.mark.asyncio
+    @patch("parapilot.tools.filters.execute_pipeline")
+    async def test_streamlines_basic(self, mock_exec):
+        from parapilot.tools.filters import streamlines_impl
+
+        mock_exec.return_value = _mock_pipeline_result()
+        runner = MagicMock()
+
+        await streamlines_impl(
+            file_path="/data/case.vtk",
+            vector_field="velocity",
+            runner=runner,
+        )
+
+        pipeline_def = mock_exec.call_args[0][0]
+        assert pipeline_def.pipeline[0].filter == "StreamTracer"
+        assert pipeline_def.output.render.field == "velocity"
+
+
+# ---------------------------------------------------------------------------
 # render_impl
 # ---------------------------------------------------------------------------
 
