@@ -22,6 +22,6 @@ keywords:
   - headless-rendering
 abstract: >-
   Headless VTK post-processing MCP server for AI coding assistants.
-  Provides 13 tools for CFD/CAE simulation visualization, data extraction,
-  and animation through a pipeline-based architecture. Supports 26+ file
+  Provides 18 tools for CFD/CAE simulation visualization, data extraction,
+  and animation through a pipeline-based architecture. Supports 50+ file
   formats with GPU (EGL) and CPU (OSMesa) headless rendering.
