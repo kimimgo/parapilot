@@ -8,6 +8,7 @@
 [![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://kimimgo.github.io/parapilot/docs/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/kimimgo/parapilot/badge)](https://scorecard.dev/viewer/?uri=github.com/kimimgo/parapilot)
 
 Headless CAE post-processing MCP server for AI coding assistants.
 
@@ -179,7 +180,7 @@ We welcome contributions! Check out our [open issues](https://github.com/kimimgo
 git clone https://github.com/kimimgo/parapilot
 cd parapilot
 pip install -e ".[dev]"
-pytest                     # 1070 tests
+pytest                     # 1091 tests
 ruff check src/ tests/     # lint
 mypy src/parapilot/        # type check
 ```
@@ -188,15 +189,18 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup, architecture guide, a
 
 ## vs Alternatives
 
-| | parapilot | LLNL/paraview_mcp | FEA-MCP | openfoam-mcp |
-|---|---|---|---|---|
-| Focus | General CAE post-processing | ParaView visualization | ETABS/LUSAS FEA | OpenFOAM education |
-| Rendering | Headless VTK (no GUI) | GUI-attached ParaView | GUI-attached | None |
-| Tests | 1070 | 0 | 0 | 0 |
-| Docker | GPU (EGL) + CPU (OSMesa) | No | No | No |
-| MCP Tools | 18 | 23 | N/A | N/A |
-| Plugin | Claude Code plugin | No | No | No |
-| Last active | 2026-03 | 2025-06 | 2025 | 2025 |
+| | parapilot | LLNL/paraview_mcp | FEA-MCP | openfoam-mcp | Blender MCP |
+|---|---|---|---|---|---|
+| Focus | General CAE post-processing | ParaView visualization | ETABS/LUSAS FEA | OpenFOAM config | 3D modeling |
+| Rendering | Headless VTK (no GUI) | GUI-attached ParaView | GUI-attached | None | GUI Blender |
+| Tests | 1091 | 0 | 0 | 0 | 0 |
+| Coverage | 99% | — | — | — | — |
+| Docker | GPU (EGL) + CPU (OSMesa) | No | No | No | No |
+| MCP Tools | 18 | 23 | N/A | N/A | N/A |
+| Formats | 20+ | ParaView native | ETABS/LUSAS | .foam only | Blender native |
+| Security | CodeQL + pip-audit + Scorecard | No | No | No | No |
+| Plugin | Claude Code plugin | No | No | No | No |
+| Last active | 2026-03 | 2025-06 | 2025 | 2025 | 2025 |
 
 ## Known Limitations
 

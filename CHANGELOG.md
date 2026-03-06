@@ -30,10 +30,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Python 3.11/3.13 CI test matrix
 - Codecov coverage reporting
 - `smithery.yaml` for MCP registry registration
+- Property-based testing with Hypothesis (11 fuzz tests for path traversal, colormaps, Pydantic models)
+- SECURITY.md with responsible disclosure policy
+- `.pre-commit-config.yaml` (ruff + mypy + pre-commit-hooks)
+- OpenSSF Scorecard CI workflow
+- PLY/OBJ/STL integration tests (real VTK I/O roundtrip)
+- Troubleshooting guide (docs/troubleshooting.md, 10 common issues)
+- CODE_OF_CONDUCT.md (Contributor Covenant v2.1)
+- `__main__.py` for `python -m parapilot` support
+- Blue to Red Rainbow and X Ray colormaps (16 → 18 colormaps)
+- Colormap resource enhanced with field-type recommendations
 
 ### Changed
 
-- Test count: 310 → 1070 (99% coverage, 1 uncovered line)
+- Test count: 310 → 1091 (99% coverage)
+- CI coverage threshold: 75% → 80%
 - File format support: 26 → 50+ (via meshio fallback)
 - CI matrix: Python 3.10/3.12 → 3.10/3.11/3.12/3.13
 
