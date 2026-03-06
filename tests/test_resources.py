@@ -140,7 +140,18 @@ class TestColormapsResource:
         resources = _capture_resources()
         data = json.loads(resources["parapilot://colormaps"]())
         assert isinstance(data, dict)
-        assert len(data) > 0
+        assert "colormaps" in data
+        assert "field_recommendations" in data
+        assert len(data["colormaps"]) >= 16
+
+    def test_field_recommendations_reference_valid_colormaps(self):
+        resources = _capture_resources()
+        data = json.loads(resources["parapilot://colormaps"]())
+        guide_names = {k.lower() for k in data["colormaps"]}
+        for field, cmap in data["field_recommendations"].items():
+            if field.startswith("_"):
+                continue
+            assert cmap.lower() in guide_names, f"{field} → {cmap} not in guide"
 
 
 class TestRepresentationsResource:
