@@ -298,6 +298,34 @@ class TestMeshioFallback:
         expected = {"vertex", "line", "triangle", "quad", "tetra", "hexahedron", "wedge", "pyramid"}
         assert expected.issubset(set(_MESHIO_TO_VTK_TYPE.keys()))
 
+    def test_meshio_fallback_success(self, tmp_path):
+        """Test meshio fallback success path (lines 258-267)."""
+        import numpy as np
+
+        from parapilot.engine.readers import DataReader
+
+        med_file = tmp_path / "mesh.med"
+        med_file.write_text("mesh data")
+
+        reader = DataReader(med_file)
+
+        mock_meshio = MagicMock()
+        mock_mesh = MagicMock()
+        mock_mesh.points = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=float)
+        cell_block = MagicMock()
+        cell_block.type = "triangle"
+        cell_block.data = np.array([[0, 1, 2]])
+        mock_mesh.cells = [cell_block]
+        mock_mesh.point_data = {"T": np.array([100.0, 200.0, 300.0])}
+        mock_meshio.read.return_value = mock_mesh
+
+        with patch.dict("sys.modules", {"meshio": mock_meshio}):
+            data = reader.read()
+
+        assert data.GetNumberOfPoints() == 3
+        assert data.GetNumberOfCells() == 1
+        assert reader._timesteps == []
+
     def test_meshio_fallback_read_fails(self, tmp_path):
         """Test meshio fallback when meshio is available but read fails."""
         from parapilot.engine.readers import DataReader
@@ -313,6 +341,155 @@ class TestMeshioFallback:
         with patch.dict("sys.modules", {"meshio": mock_meshio}):
             with pytest.raises(FileFormatError, match="meshio also failed"):
                 reader.read()
+
+    def test_meshio_fallback_read_fails_with_hint(self, tmp_path):
+        """meshio fail + typo extension includes 'Did you mean' hint."""
+        from parapilot.engine.readers import DataReader
+        from parapilot.errors import FileFormatError
+
+        typo_file = tmp_path / "file.stll"  # close to .stl
+        typo_file.write_text("data")
+
+        reader = DataReader(typo_file)
+        mock_meshio = MagicMock()
+        mock_meshio.read.side_effect = Exception("Cannot read")
+
+        with patch.dict("sys.modules", {"meshio": mock_meshio}):
+            with pytest.raises(FileFormatError, match="Did you mean"):
+                reader.read()
+
+
+# ---------------------------------------------------------------------------
+# PVD and Series reader integration
+# ---------------------------------------------------------------------------
+
+
+class TestPvdReader:
+    vtk = pytest.importorskip("vtk")
+
+    def test_read_pvd_file(self, tmp_path):
+        """DataReader reads PVD files that reference real VTK files."""
+        import vtk
+
+        from parapilot.engine.readers import DataReader
+
+        # Create a simple VTU file
+        pts = vtk.vtkPoints()
+        pts.InsertNextPoint(0, 0, 0)
+        pts.InsertNextPoint(1, 0, 0)
+        pts.InsertNextPoint(0, 1, 0)
+        grid = vtk.vtkUnstructuredGrid()
+        grid.SetPoints(pts)
+        writer = vtk.vtkXMLUnstructuredGridWriter()
+        vtu_path = tmp_path / "data_0001.vtu"
+        writer.SetFileName(str(vtu_path))
+        writer.SetInputData(grid)
+        writer.Write()
+
+        # Create PVD referencing it
+        pvd_content = """<?xml version="1.0"?>
+<VTKFile type="Collection">
+  <Collection>
+    <DataSet timestep="0.0" file="data_0001.vtu"/>
+  </Collection>
+</VTKFile>"""
+        pvd_path = tmp_path / "case.pvd"
+        pvd_path.write_text(pvd_content)
+
+        reader = DataReader(pvd_path)
+        data = reader.read()
+        assert data.GetNumberOfPoints() == 3
+
+    def test_pvd_empty_raises(self, tmp_path):
+        """PVD with no entries raises ValueError."""
+        from parapilot.engine.readers import DataReader
+
+        pvd_content = """<?xml version="1.0"?>
+<VTKFile type="Collection"><Collection></Collection></VTKFile>"""
+        pvd_path = tmp_path / "empty.pvd"
+        pvd_path.write_text(pvd_content)
+
+        reader = DataReader(pvd_path)
+        with pytest.raises(ValueError, match="No dataset entries"):
+            reader.read()
+
+    def test_pvd_missing_file_raises(self, tmp_path):
+        """PVD referencing nonexistent file raises FileNotFoundError."""
+        from parapilot.engine.readers import DataReader
+
+        pvd_content = """<?xml version="1.0"?>
+<VTKFile type="Collection">
+  <Collection>
+    <DataSet timestep="0.0" file="nonexistent.vtu"/>
+  </Collection>
+</VTKFile>"""
+        pvd_path = tmp_path / "bad.pvd"
+        pvd_path.write_text(pvd_content)
+
+        reader = DataReader(pvd_path)
+        with pytest.raises(FileNotFoundError, match="PVD references missing file"):
+            reader.read()
+
+
+class TestSeriesReader:
+    vtk = pytest.importorskip("vtk")
+
+    def test_read_series_file(self, tmp_path):
+        """DataReader reads .vtu.series files."""
+        import vtk
+
+        from parapilot.engine.readers import DataReader
+
+        # Create VTU file
+        pts = vtk.vtkPoints()
+        pts.InsertNextPoint(0, 0, 0)
+        pts.InsertNextPoint(1, 0, 0)
+        grid = vtk.vtkUnstructuredGrid()
+        grid.SetPoints(pts)
+        writer = vtk.vtkXMLUnstructuredGridWriter()
+        vtu_path = tmp_path / "step_0000.vtu"
+        writer.SetFileName(str(vtu_path))
+        writer.SetInputData(grid)
+        writer.Write()
+
+        # Create .vtu.series
+        series_data = {
+            "file-series-version": "1.0",
+            "files": [{"name": "step_0000.vtu", "time": 0.0}],
+        }
+        series_path = tmp_path / "output.vtu.series"
+        series_path.write_text(json.dumps(series_data))
+
+        reader = DataReader(series_path)
+        data = reader.read()
+        assert data.GetNumberOfPoints() == 2
+
+    def test_series_empty_raises(self, tmp_path):
+        """Series with no entries raises ValueError."""
+        from parapilot.engine.readers import DataReader
+
+        series_data = {"file-series-version": "1.0", "files": []}
+        series_path = tmp_path / "empty.vtu.series"
+        series_path.write_text(json.dumps(series_data))
+
+        reader = DataReader(series_path)
+        with pytest.raises(ValueError, match="No entries found"):
+            reader.read()
+
+    def test_series_missing_file_raises(self, tmp_path):
+        """Series referencing nonexistent file raises FileNotFoundError."""
+        from parapilot.engine.readers import DataReader
+
+        series_data = {
+            "file-series-version": "1.0",
+            "files": [{"name": "missing.vtu", "time": 0.0}],
+        }
+        series_path = tmp_path / "bad.vtu.series"
+        series_path.write_text(json.dumps(series_data))
+
+        reader = DataReader(series_path)
+        with pytest.raises(FileNotFoundError, match="Series references missing file"):
+            reader.read()
 
 
 # ---------------------------------------------------------------------------

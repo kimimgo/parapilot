@@ -164,7 +164,10 @@ class DataReader:
             self._reader.Update()
 
         assert self._reader is not None
-        return self._reader.GetOutput()
+        # vtkTrivialProducer (meshio fallback) lacks GetOutput()
+        if hasattr(self._reader, "GetOutput"):
+            return self._reader.GetOutput()
+        return self._reader.GetOutputDataObject(0)
 
     def get_info(self, timestep: float | None = None) -> DatasetInfo:
         """Get metadata about the dataset."""
