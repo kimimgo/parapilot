@@ -363,6 +363,71 @@ class TestComposeDiff:
 
         assert result == b"\x89PNG"
 
+    def test_diff_cell_association(self):
+        """Test diff with cell-associated data (line 186)."""
+        from parapilot.engine.renderer import RenderConfig
+        from parapilot.engine.renderer_cine import CinematicConfig
+        from parapilot.tools.compare import _compose_diff
+
+        # Create grids with cell data instead of point data
+        grid_a = vtk.vtkUnstructuredGrid()
+        pts_a = vtk.vtkPoints()
+        for i in range(4):
+            pts_a.InsertNextPoint(float(i), 0, 0)
+        grid_a.SetPoints(pts_a)
+        # Add a triangle cell
+        tri = vtk.vtkTriangle()
+        tri.GetPointIds().SetId(0, 0)
+        tri.GetPointIds().SetId(1, 1)
+        tri.GetPointIds().SetId(2, 2)
+        grid_a.InsertNextCell(tri.GetCellType(), tri.GetPointIds())
+
+        arr_a = vtk.vtkFloatArray()
+        arr_a.SetName("stress")
+        arr_a.SetNumberOfTuples(1)
+        arr_a.SetValue(0, 10.0)
+        grid_a.GetCellData().AddArray(arr_a)
+
+        grid_b = vtk.vtkUnstructuredGrid()
+        grid_b.DeepCopy(grid_a)
+        grid_b.GetCellData().GetArray("stress").SetValue(0, 15.0)
+
+        rc = RenderConfig(width=200, height=150)
+        config = CinematicConfig(render=rc, quality="draft")
+
+        with patch("parapilot.engine.renderer_cine.cinematic_render") as mock_cine:
+            mock_cine.return_value = b"\x89PNG_cell"
+            result = _compose_diff(grid_a, grid_b, "stress", config)
+
+        assert result == b"\x89PNG_cell"
+        diff_data = mock_cine.call_args[0][0]
+        diff_arr = diff_data.GetCellData().GetArray("diff_stress")
+        assert diff_arr is not None
+        assert abs(diff_arr.GetValue(0) - 5.0) < 0.01
+
+    def test_diff_array_missing_on_one_side(self):
+        """Test diff when array exists in resolve but not in GetArray (lines 165-166)."""
+        from parapilot.engine.renderer import RenderConfig
+        from parapilot.engine.renderer_cine import CinematicConfig
+        from parapilot.tools.compare import _compose_diff
+
+        data_a = _make_grid_with_array("pressure", 4)
+        data_b = vtk.vtkUnstructuredGrid()
+        # data_b has points but no "pressure" array
+        pts = vtk.vtkPoints()
+        for i in range(4):
+            pts.InsertNextPoint(float(i), 0, 0)
+        data_b.SetPoints(pts)
+
+        rc = RenderConfig(width=200, height=150)
+        config = CinematicConfig(render=rc, quality="draft")
+
+        with patch("parapilot.engine.renderer_cine.cinematic_render") as mock_cine:
+            mock_cine.return_value = b"\x89PNG_fallback"
+            result = _compose_diff(data_a, data_b, "pressure", config)
+
+        assert result == b"\x89PNG_fallback"
+
     def test_diff_size_mismatch(self):
         """Test diff handles datasets with different point counts."""
         from parapilot.engine.renderer import RenderConfig
