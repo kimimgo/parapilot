@@ -1,656 +1,82 @@
 ---
-const renders = [
+const images = [
   {
-    src: '/parapilot/showcase/drivaerml_cp.png',
-    title: 'DrivAerML — Pressure Coefficient',
-    tool: 'parapilot.render',
-    desc: '8.8M cell SA-DDES automotive CFD — Cp distribution on DrivAer fastback, RdBu colormap',
-    field: 'boundary.vtp',
+    src: '/parapilot/showcase/drivaerml_cp.webp',
+    alt: 'DrivAerML automotive CFD pressure coefficient',
+    label: 'Automotive CFD',
   },
   {
-    src: '/parapilot/showcase/ct_head_contour.png',
-    title: 'CT Skull Isosurface',
-    tool: 'parapilot.contour',
-    desc: 'Bone extraction at HU 1200 — Inferno colormap, 6.16M voxels → 277K polygons',
-    field: 'head.vti',
+    src: '/parapilot/showcase/ct_head_contour.webp',
+    alt: 'CT skull bone isosurface',
+    label: 'Medical CT',
   },
   {
-    src: '/parapilot/showcase/dragon.png',
-    title: 'Stanford Dragon',
-    tool: 'parapilot.render',
-    desc: '437K polygons — Plasma colormap, Elevation field',
-    field: 'dragon.ply',
+    src: '/parapilot/showcase/streamlines.webp',
+    alt: 'Carotid artery blood flow streamlines',
+    label: 'Blood Flow',
   },
   {
-    src: '/parapilot/showcase/streamlines.png',
-    title: 'Carotid Blood Flow',
-    tool: 'parapilot.streamlines',
-    desc: 'Velocity tubes from 80 seed points — Turbo colormap',
-    field: 'carotid.vtk',
+    src: '/parapilot/showcase/office_flow.webp',
+    alt: 'Office HVAC airflow streamlines',
+    label: 'HVAC Flow',
   },
   {
-    src: '/parapilot/showcase/armadillo_clip.png',
-    title: 'Armadillo Clip',
-    tool: 'parapilot.clip',
-    desc: '173K vertex mesh clipped at X-plane — Viridis',
-    field: 'Armadillo.ply',
+    src: '/parapilot/showcase/arch_structural.webp',
+    alt: 'Structural FEA displacement analysis',
+    label: 'Structural FEA',
   },
   {
-    src: '/parapilot/showcase/office_flow.png',
-    title: 'Office Airflow',
-    tool: 'parapilot.streamlines',
-    desc: 'Indoor HVAC — 120 seed streamline tubes, Turbo colormap',
-    field: 'office.binary.vtk',
-  },
-  {
-    src: '/parapilot/showcase/ct_head_slice.png',
-    title: 'CT Axial Slice',
-    tool: 'parapilot.slice',
-    desc: 'Head CT scan — Grayscale cross-section',
-    field: 'head.vti',
-  },
-  {
-    src: '/parapilot/showcase/ironprot.png',
-    title: 'Iron Protein',
-    tool: 'parapilot.contour',
-    desc: 'Electron density isosurfaces at 80/150 — Plasma',
-    field: 'ironProt.vtk',
-  },
-  {
-    src: '/parapilot/showcase/ct_volume.png',
-    title: 'CT Volume Render',
-    tool: 'parapilot.render',
-    desc: '6.16M voxels — Volume ray-casting, Inferno, medical opacity',
-    field: 'head.vti',
-  },
-];
-
-const animations = [
-  {
-    gif: '/parapilot/showcase/ct_slice_sweep.gif',
-    webp: '/parapilot/showcase/ct_slice_sweep.webp',
-    title: 'CT Axial Slice Sweep',
-    tool: 'parapilot.slice',
-    desc: '36 frames — Z-axis sweep through 6.16M voxels, Grayscale',
-    field: 'head.vti',
-  },
-  {
-    gif: '/parapilot/showcase/ct_skull_orbit.gif',
-    webp: '/parapilot/showcase/ct_skull_orbit.webp',
-    title: 'CT Skull 360° Orbit',
-    tool: 'parapilot.animate',
-    desc: '24 frames, 8fps — Inferno colormap, bone isosurface',
-    field: 'head.vti',
-  },
-  {
-    gif: '/parapilot/showcase/ironprot_orbit.gif',
-    webp: '/parapilot/showcase/ironprot_orbit.webp',
-    title: 'Iron Protein Orbit',
-    tool: 'parapilot.animate',
-    desc: '24 frames, 8fps — Plasma, dual isosurfaces',
-    field: 'ironProt.vtk',
-  },
-];
-
-const multiview = [
-  {
-    src: '/parapilot/showcase/ct_multiview.png',
-    title: 'CT Head — Multi-View Analysis',
-    desc: '4 tools, 1 dataset — Isosurface + Volume + Slice + Line Profile from head.vti (6.16M voxels)',
-    tools: ['contour', 'render', 'slice', 'plot_over_line'],
-    field: 'head.vti',
-  },
-  {
-    src: '/parapilot/showcase/carotid_multiview.png',
-    title: 'Carotid Flow — Multi-View Analysis',
-    desc: '4 tools, 1 dataset — Streamlines + Isosurfaces + Slice + Velocity Profile from carotid.vtk',
-    tools: ['streamlines', 'contour', 'slice', 'plot_over_line'],
-    field: 'carotid.vtk',
-  },
-  {
-    src: '/parapilot/showcase/cvd_multiview.png',
-    title: 'CVD Reactor — Multi-Field Analysis',
-    desc: '4 fields, 1 dataset — Temperature + Streamlines + AsH3 + H2 cross-section (ExodusII)',
-    tools: ['render', 'streamlines', 'slice'],
-    field: 'disk_out_ref.ex2',
-  },
-  {
-    src: '/parapilot/showcase/openfoam_cavity.png',
-    title: 'OpenFOAM Lid-Driven Cavity',
-    desc: 'Native .foam reader — Velocity + Pressure + Streamlines, 6 timesteps',
-    tools: ['render', 'streamlines'],
-    field: 'case.foam',
-  },
-  {
-    src: '/parapilot/showcase/notch_stress_multiview.png',
-    title: 'Notch Stress FEA',
-    desc: 'Von Mises + XX component — 12,717 nodes, structural analysis',
-    tools: ['render'],
-    field: 'notch_stress.vtk',
-  },
-  {
-    src: '/parapilot/showcase/kitchen_multiview.png',
-    title: 'Kitchen Ventilation CFD',
-    desc: 'Structured grid — Velocity + Pressure + Streamlines, 11K pts',
-    tools: ['render', 'streamlines'],
-    field: 'kitchen.vtk',
-  },
-  {
-    src: '/parapilot/showcase/drivaerml_multiview.png',
-    title: 'DrivAerML — Automotive CFD',
-    desc: '8.8M cells SA-DDES — Cp + WSS + Y-slice velocity + X-slice wake, boundary VTP + slices',
-    tools: ['render', 'slice', 'contour'],
-    field: 'boundary.vtp',
-  },
-  {
-    src: '/parapilot/showcase/windsorml_multiview.png',
-    title: 'WindsorML — GPU WMLES',
-    desc: '2.5M pts GPU-LES — Cp + Cf_x + y+ + Cp\u2032, wall-resolved external aero',
-    tools: ['render', 'contour'],
-    field: 'boundary.vtu',
-  },
-];
-
-const domains = [
-  {
-    src: '/parapilot/showcase/ocean_antarctica.png',
-    title: 'Ocean — Antarctic Ice Velocity',
-    desc: '557K pts — Ice flow velocity, magnitude + vector components',
-    domain: 'Marine',
-  },
-  {
-    src: '/parapilot/showcase/mech_bracket.png',
-    title: 'Mechanical — FEA Bracket',
-    desc: '187K pts — Von Mises stress, displacement, strain analysis',
-    domain: 'Mechanical',
-  },
-  {
-    src: '/parapilot/showcase/aero_cylinder.png',
-    title: 'Aerodynamics — Cylinder Flow',
-    desc: 'NACA airfoil density + cylinder crossflow pressure, vorticity',
-    domain: 'Aero',
-  },
-  {
-    src: '/parapilot/showcase/elec_cooling.png',
-    title: 'Electronics — PCB Cooling',
-    desc: '798K pts — Temperature, heat flux, fluid velocity on PCB',
-    domain: 'Electronics',
-  },
-  {
-    src: '/parapilot/showcase/bio_blood.png',
-    title: 'Biomedical — Knee MRI + Vessels',
-    desc: '10.3M pt knee MRI (axial/sagittal) + blood vessel flow + prostate DICOM',
-    domain: 'Biomedical',
-  },
-  {
-    src: '/parapilot/showcase/earth_volcano.png',
-    title: 'Earth Science — Mt. St. Helens',
-    desc: '3D terrain warp + global topography, elevation colormaps',
-    domain: 'Geoscience',
-  },
-  {
-    src: '/parapilot/showcase/env_particles.png',
-    title: 'Environmental — Particle DEM',
-    desc: 'Lethe particles — velocity, angular velocity, contact force',
-    domain: 'Environmental',
-  },
-  {
-    src: '/parapilot/showcase/chem_process.png',
-    title: 'Chemical — Blow Molding',
-    desc: '4-step polymer forming — wall thickness + deformation evolution',
-    domain: 'Process',
-  },
-  {
-    src: '/parapilot/showcase/arch_structural.png',
-    title: 'Architecture — Structural FEA',
-    desc: '250K pts pump bracket displacement + building HVAC zone mesh',
-    domain: 'Structural',
-  },
-  {
-    src: '/parapilot/showcase/naval_hydro.png',
-    title: 'Naval — Hull Curvature',
-    desc: 'Gaussian + mean curvature analysis, surface normals on hull form',
-    domain: 'Naval',
-  },
-  {
-    src: '/parapilot/showcase/space_stellar.png',
-    title: 'Scientific — Brain MRI + Globe',
-    desc: '7.1M voxel brain MRI slice & isosurface + global topography sphere',
-    domain: 'Scientific',
-  },
-  {
-    src: '/parapilot/showcase/urban_lidar.png',
-    title: 'Urban — LiDAR Point Cloud',
-    desc: '3.4M pts — Building heights, elevation mapping, 3D terrain',
-    domain: 'Urban',
-  },
-];
-
-const mcpTools = [
-  {
-    src: '/parapilot/showcase/mcp_render.png',
-    title: 'render',
-    desc: 'LiDAR 3.4M points — Elevation field, Viridis colormap',
-    call: 'parapilot.render(file="lidar.vtp", field="Elevation")',
-  },
-  {
-    src: '/parapilot/showcase/mcp_contour.png',
-    title: 'contour',
-    desc: 'CT skull isosurface — MetaImage field, isovalue 80',
-    call: 'parapilot.contour(file="head.vti", field="MetaImage", isovalues=[80])',
-  },
-  {
-    src: '/parapilot/showcase/mcp_slice.png',
-    title: 'slice',
-    desc: 'CT brain axial — auto-center origin, Grayscale',
-    call: 'parapilot.slice(file="head.vti", field="MetaImage")',
-  },
-  {
-    src: '/parapilot/showcase/mcp_clip.png',
-    title: 'clip',
-    desc: 'LiDAR terrain clipped at center — 3.4M points',
-    call: 'parapilot.clip(file="lidar.vtp", field="Elevation")',
-  },
-  {
-    src: '/parapilot/showcase/mcp_streamlines.png',
-    title: 'streamlines',
-    desc: 'Carotid blood flow — auto-seed, velocity tubes',
-    call: 'parapilot.streamlines(file="carotid.vtk", field="vectors")',
-  },
-];
-
-const analysis = [
-  {
-    src: '/parapilot/showcase/ct_density_profile.png',
-    title: 'CT Density Profile',
-    tool: 'parapilot.plot_over_line',
-    desc: '6.16M voxels — Sagittal density sampling, bone/tissue threshold markers',
-    field: 'head.vti',
-  },
-  {
-    src: '/parapilot/showcase/extract_stats.png',
-    title: 'Dataset Statistics',
-    tool: 'parapilot.extract_stats',
-    desc: 'Batch analysis — 4 datasets, point/cell counts, field ranges',
-    field: 'multiple',
-  },
-];
-
-const videos = [
-  {
-    mp4: '/parapilot/showcase/dragon_orbit_hd.mp4',
-    webm: '/parapilot/showcase/dragon_orbit_hd.webm',
-    poster: '/parapilot/showcase/dragon.png',
-    title: 'Dragon — 1080p Orbit',
-    tool: 'parapilot.animate',
-    desc: '871K cells, 60 frames @ 30fps, 185ms/frame render',
-    field: 'dragon.ply',
-  },
-  {
-    mp4: '/parapilot/showcase/ct_skull_orbit_hd.mp4',
-    webm: '/parapilot/showcase/ct_skull_orbit_hd.webm',
-    poster: '/parapilot/showcase/ct_head_contour.png',
-    title: 'CT Skull — 1080p Orbit',
-    tool: 'parapilot.animate',
-    desc: '6.16M pts → contour → 277K pts, 213ms/frame render',
-    field: 'head.vti',
+    src: '/parapilot/showcase/dragon.webp',
+    alt: 'Stanford Dragon mesh render',
+    label: '3D Rendering',
   },
 ];
 ---
 
-<section class="relative py-28">
-  <div class="section-divider mb-28"></div>
+<section class="relative py-24">
+  <div class="section-divider mb-24"></div>
   <div class="max-w-6xl mx-auto px-6">
-    <div class="text-center mb-16 fade-up">
-      <span class="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-mono font-medium tracking-wider mb-4">
-        SHOWCASE
-      </span>
-      <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
-        <span class="gradient-text-white">Real renders, zero GUI</span>
+
+    <div class="text-center mb-12 fade-up">
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
+        <span class="gradient-text-white">See It In Action</span>
       </h2>
-      <p class="mt-4 text-text-secondary max-w-xl mx-auto text-lg">
-        12 engineering domains, 25+ datasets — multi-view, volume, surface, animation across all CAE fields
+      <p class="text-text-secondary max-w-lg mx-auto">
+        All renders from single MCP tool calls — no post-processing.
       </p>
     </div>
 
-    <!-- Featured render (large) -->
-    <div class="mb-8 fade-up">
-      <div class="card-hover overflow-hidden group cursor-default">
-        <div class="relative aspect-video">
-          <picture>
-            <source srcset={renders[0].src.replace('.png', '.webp')} type="image/webp" />
+    <!-- 2x3 responsive grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 fade-up">
+      {images.map((img) => (
+        <div class="card-hover overflow-hidden group cursor-default">
+          <div class="relative aspect-video">
             <img
-              src={renders[0].src}
-              alt={renders[0].title}
+              src={img.src}
+              alt={img.alt}
               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
               loading="lazy"
             />
-          </picture>
-          <div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-transparent to-transparent"></div>
-          <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="px-2.5 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-mono">
-                {renders[0].tool}
-              </span>
-              <span class="text-xs text-text-secondary/60 font-mono">{renders[0].field}</span>
-            </div>
-            <h3 class="text-xl sm:text-2xl font-bold text-text-primary">{renders[0].title}</h3>
-            <p class="text-sm text-text-secondary mt-1">{renders[0].desc}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Grid of remaining renders -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 fade-up">
-      {renders.slice(1).map((r) => (
-        <div class="card-hover overflow-hidden group cursor-default">
-          <div class="relative aspect-video">
-            <picture>
-              <source srcset={r.src.replace('.png', '.webp')} type="image/webp" />
-              <img
-                src={r.src}
-                alt={r.title}
-                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                loading="lazy"
-              />
-            </picture>
             <div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
             <div class="absolute bottom-0 left-0 right-0 p-4">
-              <span class="inline-block px-2 py-0.5 rounded-full bg-accent/20 text-accent text-[10px] font-mono mb-1.5">
-                {r.tool}
-              </span>
-              <h3 class="text-sm font-semibold text-text-primary">{r.title}</h3>
-              <p class="text-xs text-text-secondary/70 mt-0.5">{r.desc}</p>
+              <span class="text-sm font-semibold text-text-primary">{img.label}</span>
             </div>
           </div>
         </div>
       ))}
     </div>
 
-    <!-- Multi-View Analysis showcase -->
-    <div class="mt-16 fade-up">
-      <div class="text-center mb-8">
-        <span class="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-mono font-medium tracking-wider mb-3">
-          MULTI-VIEW ANALYSIS
-        </span>
-        <h3 class="text-2xl sm:text-3xl font-bold tracking-tight">
-          <span class="gradient-text-white">One dataset, four perspectives</span>
-        </h3>
-        <p class="mt-3 text-text-secondary max-w-lg mx-auto">
-          Comprehensive scientific analysis — contour, volume, slice, and line profile from a single dataset
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {multiview.map((m) => (
-          <div class="card-hover overflow-hidden group cursor-default">
-            <div class="relative">
-              <picture>
-                <source srcset={m.src.replace('.png', '.webp')} type="image/webp" />
-                <img
-                  src={m.src}
-                  alt={m.title}
-                  class="w-full h-auto transition-transform duration-500 group-hover:scale-[1.02]"
-                  loading="lazy"
-                />
-              </picture>
-              <div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
-              <div class="absolute top-3 right-3">
-                <span class="px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-400 text-[10px] font-mono backdrop-blur-sm">
-                  4-VIEW
-                </span>
-              </div>
-              <div class="absolute bottom-0 left-0 right-0 p-4">
-                <div class="flex flex-wrap gap-1 mb-1.5">
-                  {m.tools.map((t: string) => (
-                    <span class="inline-block px-1.5 py-0.5 rounded-full bg-accent/20 text-accent text-[9px] font-mono">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-                <h3 class="text-sm font-semibold text-text-primary">{m.title}</h3>
-                <p class="text-xs text-text-secondary/70 mt-0.5">{m.desc}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+    <!-- Full gallery link -->
+    <div class="text-center mt-8 fade-up">
+      <a href="https://kimimgo.github.io/parapilot/"
+         target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-accent transition-colors font-mono">
+        Full Gallery
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </a>
     </div>
 
-    <!-- Engineering Domains showcase -->
-    <div class="mt-16 fade-up">
-      <div class="text-center mb-8">
-        <span class="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-mono font-medium tracking-wider mb-3">
-          12 ENGINEERING DOMAINS
-        </span>
-        <h3 class="text-2xl sm:text-3xl font-bold tracking-tight">
-          <span class="gradient-text-white">From ocean to outer space</span>
-        </h3>
-        <p class="mt-3 text-text-secondary max-w-lg mx-auto">
-          Marine, mechanical, aero, electronics, biomedical, geoscience, environmental, chemical, structural, naval, scientific, and urban engineering
-        </p>
-      </div>
-
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {domains.map((d) => (
-          <div class="card-hover overflow-hidden group cursor-default">
-            <div class="relative">
-              <picture>
-                <source srcset={d.src.replace('.png', '.webp')} type="image/webp" />
-                <img
-                  src={d.src}
-                  alt={d.title}
-                  class="w-full h-auto transition-transform duration-500 group-hover:scale-[1.02]"
-                  loading="lazy"
-                />
-              </picture>
-              <div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
-              <div class="absolute top-2 right-2">
-                <span class="px-1.5 py-0.5 rounded-full bg-cyan-500/30 text-cyan-400 text-[9px] font-mono backdrop-blur-sm">
-                  {d.domain}
-                </span>
-              </div>
-              <div class="absolute bottom-0 left-0 right-0 p-3">
-                <h3 class="text-xs font-semibold text-text-primary leading-tight">{d.title}</h3>
-                <p class="text-[10px] text-text-secondary/70 mt-0.5 leading-tight">{d.desc}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <!-- Animation showcase -->
-    <div class="mt-16 fade-up">
-      <div class="text-center mb-8">
-        <span class="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-mono font-medium tracking-wider mb-3">
-          ANIMATIONS
-        </span>
-        <h3 class="text-2xl sm:text-3xl font-bold tracking-tight">
-          <span class="gradient-text-white">Animate, sweep, orbit</span>
-        </h3>
-        <p class="mt-3 text-text-secondary max-w-lg mx-auto">
-          Slice sweeps and 360° orbit animations generated programmatically — GIF, MP4, or WebM
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        {animations.map((a) => (
-          <div class="card-hover overflow-hidden group cursor-default">
-            <div class="relative aspect-video">
-              <picture>
-                <source srcset={a.webp} type="image/webp" />
-                <img
-                  src={a.gif}
-                  alt={a.title}
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </picture>
-              <div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
-              <div class="absolute top-3 right-3">
-                <span class="px-2 py-0.5 rounded-full bg-accent/30 text-accent text-[10px] font-mono backdrop-blur-sm">
-                  ANIMATED
-                </span>
-              </div>
-              <div class="absolute bottom-0 left-0 right-0 p-4">
-                <span class="inline-block px-2 py-0.5 rounded-full bg-accent/20 text-accent text-[10px] font-mono mb-1.5">
-                  {a.tool}
-                </span>
-                <h3 class="text-sm font-semibold text-text-primary">{a.title}</h3>
-                <p class="text-xs text-text-secondary/70 mt-0.5">{a.desc}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <!-- HD Video showcase -->
-    <div class="mt-16 fade-up">
-      <div class="text-center mb-8">
-        <span class="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-mono font-medium tracking-wider mb-3">
-          1080p VIDEO
-        </span>
-        <h3 class="text-2xl sm:text-3xl font-bold tracking-tight">
-          <span class="gradient-text-white">Full HD, headless render</span>
-        </h3>
-        <p class="mt-3 text-text-secondary max-w-lg mx-auto">
-          1920&times;1080 orbit at 30fps — rendered in &lt;15 seconds per video
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {videos.map((v) => (
-          <div class="card-hover overflow-hidden group cursor-default">
-            <div class="relative aspect-video">
-              <video
-                autoplay
-                loop
-                muted
-                playsinline
-                poster={v.poster}
-                class="w-full h-full object-cover"
-              >
-                <source src={v.webm} type="video/webm" />
-                <source src={v.mp4} type="video/mp4" />
-              </video>
-              <div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent pointer-events-none"></div>
-              <div class="absolute top-3 right-3">
-                <span class="px-2 py-0.5 rounded-full bg-accent/30 text-accent text-[10px] font-mono backdrop-blur-sm">
-                  1080p
-                </span>
-              </div>
-              <div class="absolute bottom-0 left-0 right-0 p-4">
-                <span class="inline-block px-2 py-0.5 rounded-full bg-accent/20 text-accent text-[10px] font-mono mb-1.5">
-                  {v.tool}
-                </span>
-                <h3 class="text-sm font-semibold text-text-primary">{v.title}</h3>
-                <p class="text-xs text-text-secondary/70 mt-0.5">{v.desc}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <!-- MCP Tools in Action -->
-    <div class="mt-16 fade-up">
-      <div class="text-center mb-8">
-        <span class="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-mono font-medium tracking-wider mb-3">
-          MCP TOOLS IN ACTION
-        </span>
-        <h3 class="text-2xl sm:text-3xl font-bold tracking-tight">
-          <span class="gradient-text-white">One tool call, one render</span>
-        </h3>
-        <p class="mt-3 text-text-secondary max-w-lg mx-auto">
-          Each image below is the direct output of a single MCP tool call — no post-processing
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mcpTools.map((m) => (
-          <div class="card-hover overflow-hidden group cursor-default">
-            <div class="relative">
-              <picture>
-                <source srcset={m.src.replace('.png', '.webp')} type="image/webp" />
-                <img
-                  src={m.src}
-                  alt={m.title}
-                  class="w-full h-auto transition-transform duration-500 group-hover:scale-[1.02]"
-                  loading="lazy"
-                />
-              </picture>
-              <div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent"></div>
-              <div class="absolute top-3 right-3">
-                <span class="px-2 py-0.5 rounded-full bg-accent/30 text-accent text-[10px] font-mono backdrop-blur-sm">
-                  E2E
-                </span>
-              </div>
-              <div class="absolute bottom-0 left-0 right-0 p-4">
-                <span class="inline-block px-2 py-0.5 rounded-full bg-accent/20 text-accent text-[10px] font-mono mb-1.5">
-                  parapilot.{m.title}
-                </span>
-                <p class="text-xs text-text-secondary/70 mt-0.5">{m.desc}</p>
-                <code class="block text-[10px] text-accent/50 font-mono mt-1.5 truncate">{m.call}</code>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <!-- Data Analysis showcase -->
-    <div class="mt-16 fade-up">
-      <div class="text-center mb-8">
-        <span class="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-mono font-medium tracking-wider mb-3">
-          DATA ANALYSIS
-        </span>
-        <h3 class="text-2xl sm:text-3xl font-bold tracking-tight">
-          <span class="gradient-text-white">Beyond rendering</span>
-        </h3>
-        <p class="mt-3 text-text-secondary max-w-lg mx-auto">
-          Extract quantitative data from simulations — line plots, statistics, surface integrals
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {analysis.map((a) => (
-          <div class="card-hover overflow-hidden group cursor-default">
-            <div class="relative">
-              <picture>
-                <source srcset={a.src.replace('.png', '.webp')} type="image/webp" />
-                <img
-                  src={a.src}
-                  alt={a.title}
-                  class="w-full h-auto transition-transform duration-500 group-hover:scale-[1.02]"
-                  loading="lazy"
-                />
-              </picture>
-              <div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
-              <div class="absolute top-3 right-3">
-                <span class="px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-400 text-[10px] font-mono backdrop-blur-sm">
-                  DATA
-                </span>
-              </div>
-              <div class="absolute bottom-0 left-0 right-0 p-4">
-                <span class="inline-block px-2 py-0.5 rounded-full bg-accent/20 text-accent text-[10px] font-mono mb-1.5">
-                  {a.tool}
-                </span>
-                <h3 class="text-sm font-semibold text-text-primary">{a.title}</h3>
-                <p class="text-xs text-text-secondary/70 mt-0.5">{a.desc}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <div class="text-center mt-10">
-      <p class="text-text-secondary/50 text-sm font-mono">
-        render &middot; contour &middot; streamlines &middot; clip &middot; slice &middot; cinematic_render &middot; compare &middot; batch_render &middot; probe &middot; preview_3d &middot; animate &middot; split_animate &middot; extract_stats &middot; plot_over_line &mdash; 18 tools, 25+ datasets, 12 domains, 14 colormaps
-      </p>
-    </div>
   </div>
 </section>

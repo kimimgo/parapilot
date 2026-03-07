@@ -2,34 +2,19 @@
 
 **English** | [한국어](README.ko.md)
 
+> Headless CAE/CFD post-processing for AI terminals. No ParaView. No GUI.
+
 [![CI](https://github.com/kimimgo/parapilot/actions/workflows/ci.yml/badge.svg)](https://github.com/kimimgo/parapilot/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/kimimgo/parapilot/branch/main/graph/badge.svg)](https://codecov.io/gh/kimimgo/parapilot)
 [![PyPI](https://img.shields.io/pypi/v/mcp-server-parapilot)](https://pypi.org/project/mcp-server-parapilot/)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-server-parapilot)](https://pypi.org/project/mcp-server-parapilot/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/kimimgo/parapilot/blob/main/LICENSE)
-[![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://kimimgo.github.io/parapilot/docs/)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/kimimgo/parapilot/badge)](https://scorecard.dev/viewer/?uri=github.com/kimimgo/parapilot)
-
-Headless CAE post-processing MCP server for AI coding assistants.
-
-**[Landing Page](https://kimimgo.github.io/parapilot)** · **[PyPI](https://pypi.org/project/mcp-server-parapilot/)** · **[Issues](https://github.com/kimimgo/parapilot/issues)**
-
-```
-pip install mcp-server-parapilot
-```
 
 ![DrivAerML Automotive CFD](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/drivaerml_cp.webp)
-*8.8M cell SA-DDES automotive CFD — single MCP tool call, no GUI*
-
-## What it does
-
-parapilot lets AI assistants (Claude Code, Cursor, Gemini CLI) render CFD/FEA simulation results without a GUI. It talks to ParaView headless or uses VTK directly to produce PNG screenshots, statistics, and animations from OpenFOAM, VTK, CGNS, and 30+ other formats.
 
 ## Quick Start
 
-### Claude Code (plugin)
+**Claude Code plugin:**
 
 ```bash
 claude install kimimgo/parapilot
@@ -39,7 +24,21 @@ Then in a conversation:
 
 > "Render the pressure field from cavity/cavity.foam with a jet colormap"
 
-### Standalone MCP server
+**pip:**
+
+```bash
+pip install mcp-server-parapilot
+```
+
+**Docker (GPU headless):**
+
+```bash
+docker compose up -d
+```
+
+Requires NVIDIA Container Toolkit. For CPU-only: `docker compose up parapilot-cpu -d`
+
+**MCP config for Cursor / other clients:**
 
 ```json
 {
@@ -51,172 +50,51 @@ Then in a conversation:
 }
 ```
 
-### Docker (GPU headless)
+## What You Get
 
-```bash
-docker compose up -d
-```
+- **Headless Rendering** — EGL/OSMesa off-screen rendering.
+  No display, no GUI, no ParaView install needed.
 
-Requires NVIDIA Container Toolkit for GPU rendering.
+- **18 MCP Tools** — inspect, render, slice, contour, clip, streamlines,
+  cinematic render, compare, animate, extract stats, and more.
 
-### Docker (CPU-only, no GPU)
+- **50+ Formats** — OpenFOAM, VTK, CGNS, STL, PLY, OBJ, Exodus, Ensight
+  via VTK readers + meshio.
 
-```bash
-docker compose up parapilot-cpu -d
-```
+## See It In Action
 
-Uses OSMesa software rendering — works on any machine without a GPU.
-
-## Examples
-
-See [`examples/`](examples/) for complete workflow pipelines:
-
-- **thermal_analysis.json** — Conjugate heat transfer post-processing (8 steps)
-- **aerodynamics_workflow.json** — External aerodynamics: pressure, streamlines, wake analysis (7 steps)
-- **structural_fea.json** — Structural FEA: von Mises stress, displacement, fatigue paths (7 steps)
-
-## Tools (18)
-
-| Tool | Description |
-|------|-------------|
-| `inspect_data` | File metadata — fields, timesteps, bounds |
-| `render` | Single-field PNG screenshot |
-| `slice` | Cut-plane visualization |
-| `contour` | Iso-surface visualization |
-| `clip` | Clipped region visualization |
-| `streamlines` | Vector field flow visualization |
-| `cinematic_render` | Publication-quality render (SSAO, PBR, 3-point lighting) |
-| `compare` | Side-by-side or diff comparison of two datasets |
-| `probe_timeseries` | Sample field at a point across timesteps |
-| `batch_render` | Render multiple fields in one call |
-| `preview_3d` | Export to glTF/glB for interactive 3D viewing |
-| `extract_stats` | Min/max/mean/std for fields |
-| `plot_over_line` | Sample values along a line |
-| `integrate_surface` | Force/flux integration over surfaces |
-| `animate` | Time series or camera orbit animation |
-| `split_animate` | Multi-pane synchronized animation (GIF) |
-| `execute_pipeline` | Full pipeline DSL for advanced workflows |
-| `pv_isosurface` | DualSPHysics bi4 → VTK surface mesh |
-
-## Resources (11)
-
-| URI | Content |
-|-----|---------|
-| `parapilot://formats` | Supported file formats and readers |
-| `parapilot://filters` | Available filter parameters |
-| `parapilot://colormaps` | Colormap presets |
-| `parapilot://cameras` | Camera angle presets + auto-camera PCA |
-| `parapilot://cinematic` | Lighting, materials, backgrounds, quality presets |
-| `parapilot://representations` | Render representations |
-| `parapilot://case-presets` | Domain-specific case presets |
-| `parapilot://physics-defaults` | Physics-aware rendering defaults |
-| `parapilot://pipelines/cfd` | CFD pipeline examples |
-| `parapilot://pipelines/fea` | FEA pipeline examples |
-| `parapilot://pipelines/split-animate` | Split animation examples |
-
-## Showcase
-
-All renders below are generated by single MCP tool calls — no post-processing.
+All renders from single MCP tool calls — no post-processing.
 
 | | | |
 |---|---|---|
-| ![CT Skull](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/ct_head_contour.webp) | ![Streamlines](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/streamlines.webp) | ![Dragon](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/dragon.webp) |
-| Bone isosurface (contour) | Carotid blood flow (streamlines) | Stanford Dragon (render) |
-| ![CT Volume](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/ct_volume.webp) | ![Office Flow](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/office_flow.webp) | ![Armadillo Clip](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/armadillo_clip.webp) |
-| Volume ray-casting (render) | HVAC airflow (streamlines) | Mesh clip (clip) |
+| ![Automotive CFD](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/drivaerml_cp.webp) | ![Medical CT](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/ct_head_contour.webp) | ![Blood Flow](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/streamlines.webp) |
+| Automotive CFD | Medical CT | Blood flow |
+| ![HVAC](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/office_flow.webp) | ![Structural FEA](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/arch_structural.webp) | ![Stanford Dragon](https://raw.githubusercontent.com/kimimgo/parapilot/main/www/public/showcase/dragon.webp) |
+| HVAC airflow | Structural FEA | Stanford Dragon |
 
-**12 engineering domains** — Marine, Mechanical, Aero, Electronics, Biomedical, Geoscience, Environmental, Chemical, Structural, Naval, Scientific, Urban.
-
-See the full gallery at **[kimimgo.github.io/parapilot](https://kimimgo.github.io/parapilot)**.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│  AI Assistant (Claude / Cursor / Gemini)    │
-│  ↕ MCP protocol (stdio)                    │
-├─────────────────────────────────────────────┤
-│  parapilot MCP Server (FastMCP)             │
-│  ├── tools/     18 MCP tools                │
-│  ├── resources/ 11 MCP resources            │
-│  └── prompts/   3 MCP prompts               │
-├─────────────────────────────────────────────┤
-│  Engine Layer (VTK direct API)              │
-│  ├── readers    OpenFOAM, VTK, CGNS, ...    │
-│  ├── filters    Slice, Contour, Clip, ...   │
-│  ├── renderer   Off-screen VTK rendering    │
-│  ├── camera     Preset + custom positions   │
-│  ├── colormaps  Scientific color schemes    │
-│  ├── overlay    Scalar bars, labels, text   │
-│  ├── physics    Auto-detect field types     │
-│  └── export     PNG, VTK, CSV output        │
-├─────────────────────────────────────────────┤
-│  Core Layer                                 │
-│  ├── compiler   Pipeline → VTK script       │
-│  ├── runner     Local / Docker execution    │
-│  ├── registry   Filter & format schemas     │
-│  └── output     Result collection           │
-└─────────────────────────────────────────────┘
-```
-
-## Workflow
-
-```
-inspect_data → render / slice / contour → extract_stats → animate
-```
-
-1. **Inspect** — discover fields, timesteps, bounds
-2. **Visualize** — render, slice, contour, clip, streamlines
-3. **Extract** — statistics, line plots, surface integrals
-4. **Animate** — time series or multi-pane comparison
-
-## Supported Formats
-
-OpenFOAM (.foam), VTK (.vti/.vtp/.vtu/.vtm), CGNS (.cgns), Ensight (.case), Exodus (.exo), STL (.stl), PLY (.ply), OBJ (.obj), and 30+ more via VTK readers.
-
-## Contributing
-
-We welcome contributions! Check out our [open issues](https://github.com/kimimgo/parapilot/issues) — especially those labeled [`good first issue`](https://github.com/kimimgo/parapilot/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
-
-```bash
-git clone https://github.com/kimimgo/parapilot
-cd parapilot
-pip install -e ".[dev]"
-pytest                     # 1128 tests
-ruff check src/ tests/     # lint
-mypy src/parapilot/        # type check
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup, architecture guide, and how to add new filters/readers.
+[Full Gallery →](https://kimimgo.github.io/parapilot)
 
 ## vs Alternatives
 
-| | parapilot | LLNL/paraview_mcp | FEA-MCP | openfoam-mcp | Blender MCP |
-|---|---|---|---|---|---|
-| Focus | General CAE post-processing | ParaView visualization | ETABS/LUSAS FEA | OpenFOAM config | 3D modeling |
-| Rendering | Headless VTK (no GUI) | GUI-attached ParaView | GUI-attached | None | GUI Blender |
-| Tests | 1128 | 0 | 0 | 0 | 0 |
-| Coverage | 99% | — | — | — | — |
-| Docker | GPU (EGL) + CPU (OSMesa) | No | No | No | No |
-| MCP Tools | 18 | 23 | N/A | N/A | N/A |
-| Formats | 20+ | ParaView native | ETABS/LUSAS | .foam only | Blender native |
-| Security | CodeQL + pip-audit + Scorecard | No | No | No | No |
-| Plugin | Claude Code plugin | No | No | No | No |
-| Last active | 2026-03 | 2025-06 | 2025 | 2025 | 2025 |
+| Feature | parapilot | ParaView (pvpython) | PyVista | VTK Python |
+|---------|-----------|---------------------|---------|------------|
+| MCP Integration | Native 18 tools | — | — | — |
+| Headless | EGL/OSMesa | pvpython | Yes | Manual |
+| Docker | GPU + CPU | Complex | — | — |
+| Natural Language | AI-first | — | — | — |
+| File Formats | 50+ (meshio) | 70+ | 30+ | ~20 |
+| Installation | pip install | System package | pip install | pip install |
+| Tests | 1134 (99% cov) | N/A | Yes | N/A |
 
-## Known Limitations
+## Contributing
 
-- Validated with VTK example datasets only — large-scale industrial data (100M+ cells) is unverified
-- Headless rendering means no real-time visual feedback to catch LLM-generated parameter errors
-- No simulation steering, multi-physics coupling, or uncertainty quantification
-- When ParaView natively integrates MCP, this wrapper approach may become redundant
+```bash
+git clone https://github.com/kimimgo/parapilot
+cd parapilot && pip install -e ".[dev]"
+pytest  # 1134 tests, 99% coverage
+```
 
-## Contributors
-
-<!-- ALL-CONTRIBUTORS-LIST:START -->
-| [<img src="https://avatars.githubusercontent.com/u/21175731?v=4" width="60px;" alt="kimimgo"/><br /><sub><b>kimimgo</b></sub>](https://github.com/kimimgo) |
-| :---: |
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 

@@ -1,0 +1,75 @@
+---
+const stats = [
+  { value: '18', label: 'Tools' },
+  { value: '1134', label: 'Tests' },
+  { value: '50+', label: 'Formats' },
+  { value: '99%', label: 'Coverage' },
+];
+
+const features = [
+  { label: 'MCP Integration', ours: true, paraview: false, pyvista: false, vtk: false },
+  { label: 'Headless Rendering', ours: true, paraview: true, pyvista: true, vtk: 'partial' },
+  { label: 'Docker Support', ours: true, paraview: 'partial', pyvista: false, vtk: false },
+  { label: 'Natural Language', ours: true, paraview: false, pyvista: false, vtk: false },
+  { label: '50+ File Formats', ours: true, paraview: true, pyvista: true, vtk: false },
+  { label: 'pip install', ours: true, paraview: false, pyvista: true, vtk: true },
+];
+---
+
+<section class="relative py-24">
+  <div class="section-divider mb-24"></div>
+  <div class="max-w-6xl mx-auto px-6">
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20 fade-up">
+      {stats.map((s) => (
+        <div class="text-center">
+          <div class="text-4xl sm:text-5xl font-extrabold gradient-text font-mono mb-1">
+            {s.value}
+          </div>
+          <div class="text-sm font-medium text-text-secondary">{s.label}</div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Comparison table -->
+    <div class="fade-up">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
+          <span class="gradient-text-white">How it compares</span>
+        </h2>
+      </div>
+
+      <div class="max-w-3xl mx-auto rounded-2xl border border-border overflow-hidden">
+        <!-- Header -->
+        <div class="grid grid-cols-5 bg-secondary text-[11px] font-mono uppercase tracking-wider text-text-secondary/50">
+          <div class="px-4 py-3 border-r border-border/30">Feature</div>
+          <div class="px-4 py-3 border-r border-border/30 text-center text-accent">parapilot</div>
+          <div class="px-4 py-3 border-r border-border/30 text-center">ParaView<br/><span class="text-[9px] normal-case">(pvpython)</span></div>
+          <div class="px-4 py-3 border-r border-border/30 text-center">PyVista</div>
+          <div class="px-4 py-3 text-center">VTK<br/><span class="text-[9px] normal-case">Python</span></div>
+        </div>
+
+        <!-- Rows -->
+        {features.map((f, i) => (
+          <div class={`grid grid-cols-5 text-sm ${i % 2 === 0 ? 'bg-tertiary/50' : 'bg-secondary/30'}`}>
+            <div class="px-4 py-3 border-r border-border/20 text-text-secondary/70 text-xs sm:text-sm">{f.label}</div>
+            <div class="px-4 py-3 border-r border-border/20 text-center">
+              {f.ours === true ? <span class="text-[#28c840]">&#10003;</span> : <span class="text-text-secondary/30">&mdash;</span>}
+            </div>
+            <div class="px-4 py-3 border-r border-border/20 text-center">
+              {f.paraview === true ? <span class="text-[#28c840]">&#10003;</span> : f.paraview === 'partial' ? <span class="text-yellow-500/70">&#9888;</span> : <span class="text-text-secondary/30">&mdash;</span>}
+            </div>
+            <div class="px-4 py-3 border-r border-border/20 text-center">
+              {f.pyvista === true ? <span class="text-[#28c840]">&#10003;</span> : f.pyvista === 'partial' ? <span class="text-yellow-500/70">&#9888;</span> : <span class="text-text-secondary/30">&mdash;</span>}
+            </div>
+            <div class="px-4 py-3 text-center">
+              {f.vtk === true ? <span class="text-[#28c840]">&#10003;</span> : f.vtk === 'partial' ? <span class="text-yellow-500/70">&#9888;</span> : <span class="text-text-secondary/30">&mdash;</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+  </div>
+</section>
