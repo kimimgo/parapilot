@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-07
+
+### Changed
+
+- README.md redesigned: 224 → 101 lines, benchmark-driven "proof first" structure
+- README.ko.md: matching Korean translation
+- Landing page: 9 components → 5 sections (Hero, Proof, Showcase, QuickStart, Footer)
+- Removed: Architecture, Features, Stats, Comparison, PluginShowcase components
+- New: Proof.astro (unified stats + comparison matrix)
+- Showcase: 44 images → 6 curated picks in 2x3 grid
+- QuickStart: absorbed PluginShowcase, 3-step install flow
+
 ## [0.2.0] - 2026-03-07
 
 ### Added
@@ -113,6 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Path traversal prevention when `PARAPILOT_DATA_DIR` is set
 - Landing page (Astro 5 + Tailwind) with interactive showcase gallery
 
-[Unreleased]: https://github.com/kimimgo/parapilot/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/kimimgo/parapilot/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/kimimgo/parapilot/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/kimimgo/parapilot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/kimimgo/parapilot/releases/tag/v0.1.0
