@@ -17,13 +17,24 @@ logger = get_logger("server")
 
 
 def _has_mcp_tasks() -> bool:
-    """Check if FastMCP >= 3.0 with MCP Tasks support is available."""
+    """Check if FastMCP >= 3.0 with MCP Tasks support is available.
+
+    Requires both: (1) FastMCP >= 3.0.0 and (2) the tasks extra (docket).
+    FastMCP 3.x raises ImportError at decoration time if docket is missing,
+    so we must verify it here — not just the version.
+    """
     try:
         from importlib.metadata import version as get_version
 
         from packaging.version import parse
 
-        return parse(get_version("fastmcp")) >= parse("3.0.0")
+        if parse(get_version("fastmcp")) < parse("3.0.0"):
+            return False
+        # FastMCP 3.x requires docket for task=True; verify it's importable
+        import importlib
+
+        importlib.import_module("docket")
+        return True
     except Exception:
         return False
 

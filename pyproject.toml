@@ -37,7 +37,7 @@ docs = [
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.27",
 ]
-tasks = ["fastmcp>=3.0.0"]
+tasks = ["fastmcp[tasks]>=3.0.0"]
 all = ["mcp-server-parapilot[mesh,composite,tasks]"]
 dev = [
     "pytest>=8.0",
